@@ -765,6 +765,10 @@
                 <div class="card-header">
                     <h2 class="card-title">Registered Phones</h2>
                 </div>
+                <div class="search-wrap" style="padding: 0 0.25rem;">
+                    <input type="text" id="phone-search" class="form-input" placeholder="Search phones..." style="padding-right: 24px;">
+                    <button id="phone-search-clear" class="search-clear-btn" style="right: 8px;">×</button>
+                </div>
                 <div id="devices-container" class="device-list">
                     <div class="no-data">No registered phones.</div>
                 </div>
@@ -1005,6 +1009,7 @@
         let phones = [];
         let globalSettings = { globalSendRate: 10 };
         let currentQueueLength = 0;
+        let phoneSearchQuery = '';
 
         // State for backend-driven pagination and search
         let currentPage = 1;
@@ -1218,6 +1223,31 @@
 
         // Update Registered Phones list & controls
         function updatePhonesUI() {
+            const query = phoneSearchQuery.trim().toLowerCase();
+            const filteredPhones = phones.filter(p => {
+                if (!query) return true;
+                
+                const deviceModel = (p.deviceModel || '').toLowerCase();
+                const deviceId = (p.deviceId || '').toLowerCase();
+                const sim1Carrier = (p.sim1Carrier || '').toLowerCase();
+                const sim1Number = (p.sim1Number || '').toLowerCase();
+                const sim2Carrier = (p.sim2Carrier || '').toLowerCase();
+                const sim2Number = (p.sim2Number || '').toLowerCase();
+                const battery = p.battery !== undefined ? String(p.battery) : '';
+                const lastSeen = p.lastSeen ? new Date(p.lastSeen).toLocaleString().toLowerCase() : '';
+                const status = p.online ? 'online' : 'offline';
+
+                return deviceModel.includes(query) ||
+                       deviceId.includes(query) ||
+                       sim1Carrier.includes(query) ||
+                       sim1Number.includes(query) ||
+                       sim2Carrier.includes(query) ||
+                       sim2Number.includes(query) ||
+                       battery.includes(query) ||
+                       lastSeen.includes(query) ||
+                       status.includes(query);
+            });
+
             const onlineCount = phones.filter(p => p.online).length;
             if (onlineCount > 0) {
                 statusDot.className = 'status-dot online';
@@ -1230,10 +1260,10 @@
             }
 
             // Render Devices List
-            if (phones.length === 0) {
-                devicesContainer.innerHTML = '<div class="no-data">No registered phones.</div>';
+            if (filteredPhones.length === 0) {
+                devicesContainer.innerHTML = `<div class="no-data">${phoneSearchQuery ? 'No matching phones.' : 'No registered phones.'}</div>`;
             } else {
-                devicesContainer.innerHTML = phones.map(p => {
+                devicesContainer.innerHTML = filteredPhones.map(p => {
                     const statusTextHtml = p.online 
                         ? `<span class="badge badge-delivered" style="font-size: 9px; padding: 1px 3px;">Online</span>`
                         : `<span class="badge badge-failed" style="font-size: 9px; padding: 1px 3px;">Offline</span>`;
@@ -1736,6 +1766,29 @@
             .finally(() => {
                 clearLogsBtn.disabled = false;
             });
+        });
+
+        // Phone Search event listeners
+        const phoneSearchInput = document.getElementById('phone-search');
+        const phoneSearchClearBtn = document.getElementById('phone-search-clear');
+
+        phoneSearchInput.addEventListener('input', () => {
+            const val = phoneSearchInput.value;
+            phoneSearchQuery = val;
+            
+            if (val) {
+                phoneSearchClearBtn.style.display = 'block';
+            } else {
+                phoneSearchClearBtn.style.display = 'none';
+            }
+            updatePhonesUI();
+        });
+
+        phoneSearchClearBtn.addEventListener('click', () => {
+            phoneSearchInput.value = '';
+            phoneSearchQuery = '';
+            phoneSearchClearBtn.style.display = 'none';
+            updatePhonesUI();
         });
 
         // Search & Pagination event listeners

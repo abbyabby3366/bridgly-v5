@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
         }
 
         val sharedPref = getSharedPreferences("BridglySmsConfig", Context.MODE_PRIVATE)
-        val initialUrl = sharedPref.getString("server_url", "wss://bridgly.neuron.my") ?: "wss://bridgly.neuron.my"
+        val initialUrl = sharedPref.getString("server_url", "wss://bridgly-v5.onrender.com") ?: "wss://bridgly-v5.onrender.com"
 
         if (!sharedPref.contains("device_id")) {
             sharedPref.edit().putString("device_id", java.util.UUID.randomUUID().toString().take(8)).apply()
@@ -714,7 +714,7 @@ fun SmsGatewayDashboard(
                             onSaveUrl(it)
                         },
                         label = { Text("Server WS URL") },
-                        placeholder = { Text("wss://bridgly.neuron.my") },
+                        placeholder = { Text("wss://bridgly-v5.onrender.com") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
