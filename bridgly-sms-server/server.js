@@ -415,60 +415,68 @@ function addLog(msg) {
 
 // Download APK Endpoint
 app.get('/download-apk', (req, res) => {
-    // 1. Try to find the latest APK in the project root directory (starting with 'bridgly-v' and ending with '.apk')
+    const publicDir = path.join(__dirname, 'public');
     const rootDir = path.resolve(__dirname, '..');
-    console.log(`[APK Download] Searching in rootDir: ${rootDir}`);
+    const apkDir = path.resolve(__dirname, '..', 'bridgly-sms-apk', 'app', 'build', 'outputs', 'apk', 'debug');
+    const fallbackPath = path.join(publicDir, 'bridgly-sms-gateway.apk');
+
+    // 1. Try to find the latest APK in the server's public directory (starting with 'bridgly-v' and ending with '.apk')
+    try {
+        if (fs.existsSync(publicDir)) {
+            const files = fs.readdirSync(publicDir);
+            const apkFiles = files.filter(f => f.toLowerCase().startsWith('bridgly-v') && f.toLowerCase().endsWith('.apk'));
+            if (apkFiles.length > 0) {
+                apkFiles.sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
+                const latestApk = apkFiles[0];
+                const apkPath = path.join(publicDir, latestApk);
+                return res.download(apkPath, latestApk);
+            }
+        }
+    } catch (err) {
+        console.error('Error reading public directory for APKs:', err);
+    }
+
+    // 2. Try to find the latest APK in the project root directory
     try {
         if (fs.existsSync(rootDir)) {
             const files = fs.readdirSync(rootDir);
-            console.log(`[APK Download] Files in rootDir:`, files);
             const apkFiles = files.filter(f => f.toLowerCase().startsWith('bridgly-v') && f.toLowerCase().endsWith('.apk'));
-            console.log(`[APK Download] Filtered APK files:`, apkFiles);
             if (apkFiles.length > 0) {
-                // Sort to get the latest version (e.g. bridgly-v5.0.apk) descending
                 apkFiles.sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
                 const latestApk = apkFiles[0];
                 const apkPath = path.join(rootDir, latestApk);
-                console.log(`[APK Download] Serving latest APK: ${apkPath}`);
                 return res.download(apkPath, latestApk);
             }
-        } else {
-            console.log(`[APK Download] rootDir does not exist`);
         }
     } catch (err) {
-        console.error('[APK Download] Error reading root directory for APKs:', err);
+        console.error('Error reading root directory for APKs:', err);
     }
 
-    // 2. Fallback: Try to find the APK in the Android app build outputs directory
-    const apkDir = path.resolve(__dirname, '..', 'bridgly-sms-apk', 'app', 'build', 'outputs', 'apk', 'debug');
-    console.log(`[APK Download] Falling back to apkDir: ${apkDir}`);
+    // 3. Fallback: Try to find the APK in the Android app build outputs directory
     try {
         if (fs.existsSync(apkDir)) {
             const files = fs.readdirSync(apkDir);
             const apkFile = files.find(f => f.endsWith('.apk'));
             if (apkFile) {
                 const apkPath = path.join(apkDir, apkFile);
-                console.log(`[APK Download] Serving build output APK: ${apkPath}`);
                 return res.download(apkPath, apkFile);
             }
         }
     } catch (err) {
-        console.error('[APK Download] Error reading Android build directory:', err);
+        console.error('Error reading Android build directory:', err);
     }
 
-    // 3. Fallback to server's public folder
-    const fallbackPath = path.join(__dirname, 'public', 'bridgly-sms-gateway.apk');
-    console.log(`[APK Download] Falling back to public path: ${fallbackPath}`);
+    // 4. Fallback to server's public folder specific filename
     if (fs.existsSync(fallbackPath)) {
-        console.log(`[APK Download] Serving public folder APK: ${fallbackPath}`);
         return res.download(fallbackPath, 'bridgly-sms-gateway.apk');
     }
 
     res.status(404).send(`APK file not found.\n\n` +
         `Paths searched:\n` +
-        `1. Project root: ${rootDir} (looking for files matching "bridgly-v*.apk")\n` +
-        `2. Build output: ${apkDir}\n` +
-        `3. Public fallback: ${fallbackPath}\n\n` +
+        `1. Public folder: ${publicDir} (looking for files matching "bridgly-v*.apk")\n` +
+        `2. Project root: ${rootDir} (looking for files matching "bridgly-v*.apk")\n` +
+        `3. Build output: ${apkDir}\n` +
+        `4. Public fallback: ${fallbackPath}\n\n` +
         `Please ensure the APK is placed in one of these locations.`);
 });
 
