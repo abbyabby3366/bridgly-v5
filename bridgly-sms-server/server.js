@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
+const fs = require('fs');
 const { MongoClient } = require('mongodb');
 
 // MongoDB setup
@@ -412,6 +413,50 @@ function addLog(msg) {
 
 
 
+// Download APK Endpoint
+app.get('/download-apk', (req, res) => {
+    // 1. Try to find the latest APK in the project root directory (starting with 'bridgly-v' and ending with '.apk')
+    const rootDir = path.resolve(__dirname, '..');
+    try {
+        if (fs.existsSync(rootDir)) {
+            const files = fs.readdirSync(rootDir);
+            const apkFiles = files.filter(f => f.toLowerCase().startsWith('bridgly-v') && f.toLowerCase().endsWith('.apk'));
+            if (apkFiles.length > 0) {
+                // Sort to get the latest version (e.g. bridgly-v5.0.apk) descending
+                apkFiles.sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
+                const latestApk = apkFiles[0];
+                const apkPath = path.join(rootDir, latestApk);
+                return res.download(apkPath, latestApk);
+            }
+        }
+    } catch (err) {
+        console.error('Error reading root directory for APKs:', err);
+    }
+
+    // 2. Fallback: Try to find the APK in the Android app build outputs directory
+    const apkDir = path.resolve(__dirname, '..', 'bridgly-sms-apk', 'app', 'build', 'outputs', 'apk', 'debug');
+    try {
+        if (fs.existsSync(apkDir)) {
+            const files = fs.readdirSync(apkDir);
+            const apkFile = files.find(f => f.endsWith('.apk'));
+            if (apkFile) {
+                const apkPath = path.join(apkDir, apkFile);
+                return res.download(apkPath, apkFile);
+            }
+        }
+    } catch (err) {
+        console.error('Error reading Android build directory:', err);
+    }
+
+    // 3. Fallback to server's public folder
+    const fallbackPath = path.join(__dirname, 'public', 'bridgly-sms-gateway.apk');
+    if (fs.existsSync(fallbackPath)) {
+        return res.download(fallbackPath, 'bridgly-sms-gateway.apk');
+    }
+
+    res.status(404).send('APK file not found. Please place an APK in the root directory (matching "bridgly-v*.apk") or build the Android app.');
+});
+
 // Settings Management
 app.get('/api/settings', (req, res) => {
     res.json(settings);
@@ -642,8 +687,8 @@ async function startServer() {
     await connectMongo();
     await loadPersistence();
     
-    server.listen(PORT, '0.0.0.0', () => {
-        console.log(`Bridgly SMS server is running on http://0.0.0.0:${PORT}`);
+    server.listen(PORT, 'localhost', () => {
+        console.log(`Bridgly SMS server is running on http://localhost:${PORT}`);
     });
 }
 

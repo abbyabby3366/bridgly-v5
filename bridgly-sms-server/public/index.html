@@ -260,6 +260,10 @@
             gap: 0.35rem;
         }
 
+        a.btn {
+            text-decoration: none;
+        }
+
         .btn:hover {
             background: var(--accent-hover);
         }
@@ -752,6 +756,14 @@
                     <div id="status-dot" class="status-dot"></div>
                     <span id="status-text">All Devices Offline</span>
                 </div>
+                <a href="/download-apk" class="btn btn-secondary" title="Download Latest Android APK">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Download APK</span>
+                </a>
                 <div class="settings-wrap">
                     <button class="gear-btn" id="gear-btn" title="Settings">⚙</button>
                 </div>

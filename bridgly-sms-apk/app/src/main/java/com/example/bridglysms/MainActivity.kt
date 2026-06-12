@@ -37,6 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
 
 class MainActivity : ComponentActivity() {
 
@@ -149,6 +152,13 @@ class MainActivity : ComponentActivity() {
                         checkPermissions = { hasAllPermissions() },
                         requestPermissionsLauncher = { launcher ->
                             launcher.launch(requiredPermissions)
+                        },
+                        getPermissionStatuses = {
+                            requiredPermissions.map { permission ->
+                                val name = permission.substringAfterLast(".")
+                                val isGranted = ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+                                name to isGranted
+                            }
                         }
                     )
                 }
@@ -267,7 +277,8 @@ fun SmsGatewayDashboard(
     onStartService: (String) -> Unit,
     onStopService: () -> Unit,
     checkPermissions: () -> Boolean,
-    requestPermissionsLauncher: (ActivityResultLauncherWrapper) -> Unit
+    requestPermissionsLauncher: (ActivityResultLauncherWrapper) -> Unit,
+    getPermissionStatuses: () -> List<Pair<String, Boolean>>
 ) {
     val context = LocalContext.current
     val sharedPref = remember { context.getSharedPreferences("BridglySmsConfig", Context.MODE_PRIVATE) }
@@ -276,8 +287,22 @@ fun SmsGatewayDashboard(
     val logs = remember { mutableStateListOf<String>().apply { addAll(SmsService.logs) } }
     var permissionsGranted by remember { mutableStateOf(checkPermissions()) }
     var showServerConfigDialog by remember { mutableStateOf(false) }
+    var showPermissionsDialog by remember { mutableStateOf(false) }
     var logsExpanded by remember { mutableStateOf(sharedPref.getBoolean("logs_expanded", true)) }
     var currentScreen by remember { mutableStateOf("dashboard") }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                permissionsGranted = checkPermissions()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // SIM info states
     var sim1Carrier by remember { mutableStateOf("SIM 1") }
@@ -521,7 +546,8 @@ fun SmsGatewayDashboard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = if (permissionsGranted) "✅" else "⚠️",
-                    fontSize = 24.sp
+                    fontSize = 24.sp,
+                    modifier = Modifier.clickable { showPermissionsDialog = true }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(onClick = { showServerConfigDialog = true }) {
@@ -697,6 +723,68 @@ fun SmsGatewayDashboard(
                 }
             }
         }
+    }
+
+    if (showPermissionsDialog) {
+        val permissionStatuses = getPermissionStatuses()
+        AlertDialog(
+            onDismissRequest = { showPermissionsDialog = false },
+            title = {
+                Text("App Permissions", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Here is the status of the required system permissions:",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    permissionStatuses.forEach { (name, isGranted) ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (isGranted) "✅" else "❌",
+                                fontSize = 16.sp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = name,
+                                fontSize = 14.sp,
+                                fontWeight = if (isGranted) FontWeight.Normal else FontWeight.Bold,
+                                color = if (isGranted) Color.Unspecified else Color(0xFFD32F2F)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = {
+                            try {
+                                val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = android.net.Uri.fromParts("package", context.packageName, null)
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Could not open settings", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Text("Permission Settings")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = { showPermissionsDialog = false }) {
+                        Text("Close")
+                    }
+                }
+            }
+        )
     }
 
     if (showServerConfigDialog) {
