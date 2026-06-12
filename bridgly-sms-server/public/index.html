@@ -771,6 +771,204 @@
         .card.collapsed .toggle-icon {
             transform: rotate(-90deg);
         }
+
+        /* Clickable phone number in device cards */
+        .phone-select-link {
+            cursor: pointer;
+            color: #fff;
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.25);
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+            padding: 1px 3px;
+            border-radius: 2px;
+            font-weight: 600;
+        }
+
+        .phone-select-link:hover {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: rgba(79, 70, 229, 0.08);
+        }
+
+        .phone-select-link:active {
+            background: rgba(79, 70, 229, 0.15);
+        }
+
+        /* ===== Mobile Responsive Styles ===== */
+        @media (max-width: 600px) {
+            body {
+                padding: 0.5rem;
+                font-size: 12px;
+            }
+
+            .container {
+                gap: 0.5rem;
+            }
+
+            /* Header */
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 0.5rem;
+            }
+
+            .brand h1 {
+                font-size: 0.95rem;
+            }
+
+            .header-controls {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            /* Main grid stacks vertically */
+            .grid-main {
+                grid-template-columns: 1fr;
+            }
+
+            /* Cards */
+            .card {
+                padding: 0.5rem;
+                gap: 0.5rem;
+            }
+
+            /* Tabs */
+            .tab-headers {
+                flex-wrap: wrap;
+            }
+
+            .tab-btn {
+                flex: 1;
+                text-align: center;
+                padding: 0.4rem 0.5rem;
+                font-size: 11px;
+                min-width: 0;
+            }
+
+            /* Single form grid stacks */
+            #single-tab form > div:first-child {
+                grid-template-columns: 1fr !important;
+            }
+
+            .sim-selector {
+                min-height: 36px;
+            }
+
+            .sim-label {
+                padding: 0.4rem;
+                font-size: 10px;
+            }
+
+            /* Buttons - touch friendly */
+            .btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 12px;
+                min-height: 36px;
+            }
+
+            /* Form inputs - touch friendly */
+            .form-input {
+                padding: 0.5rem 0.6rem;
+                font-size: 13px;
+                min-height: 36px;
+            }
+
+            /* Device list */
+            .device-list {
+                max-height: 320px;
+            }
+
+            .device-card {
+                padding: 0.5rem;
+            }
+
+            /* Bottom split stacks */
+            .split-bottom {
+                grid-template-columns: 1fr;
+            }
+
+            /* Console */
+            .console {
+                height: 160px;
+                font-size: 10px;
+            }
+
+            /* Table scroll */
+            .table-wrap {
+                max-height: 300px;
+            }
+
+            table {
+                font-size: 10px;
+            }
+
+            th, td {
+                padding: 0.35rem 0.3rem;
+            }
+
+            /* History header controls wrap */
+            #history-header {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 0.4rem !important;
+            }
+
+            #history-header > div:last-child {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            #history-header .search-wrap {
+                flex: 1;
+                min-width: 0;
+            }
+
+            #history-header .search-wrap input {
+                width: 100% !important;
+            }
+
+            /* Pagination */
+            .pagination-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .pagination-controls {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 0.3rem;
+            }
+
+            /* Settings dialog */
+            dialog.settings-modal {
+                width: 95vw;
+                padding: 1rem;
+            }
+
+            /* Bulk info panel */
+            .bulk-info-panel {
+                font-size: 10px !important;
+            }
+
+            /* Queue widget */
+            .queue-widget {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.4rem;
+            }
+
+            /* CSV preview */
+            #csv-preview-pagination {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 0.4rem !important;
+            }
+        }
     </style>
 </head>
 
@@ -1364,12 +1562,12 @@
                             <div class="device-meta" style="margin-top: 0.25rem; display: flex; flex-direction: column; gap: 0.25rem;">
                                 <div style="display: flex; justify-content: space-between; font-size: 11px;">
                                     <span style="color: var(--text-muted);">SIM 1 (${esc(p.sim1Carrier)}):</span>
-                                    <strong>${esc(p.sim1Number || 'null')}</strong>
+                                    <span class="phone-select-link" onclick="selectPhoneNumber('${esc(p.deviceId)}', 1)" title="Click to use this number">${esc(p.sim1Number || 'null')}</span>
                                 </div>
                                 ${p.isDualSim ? `
                                 <div style="display: flex; justify-content: space-between; font-size: 11px;">
                                     <span style="color: var(--text-muted);">SIM 2 (${esc(p.sim2Carrier)}):</span>
-                                    <strong>${esc(p.sim2Number || 'null')}</strong>
+                                    <span class="phone-select-link" onclick="selectPhoneNumber('${esc(p.deviceId)}', 2)" title="Click to use this number">${esc(p.sim2Number || 'null')}</span>
                                 </div>` : ''}
                                 <div style="display: flex; justify-content: space-between; margin-top: 0.35rem; font-size: 10px; color: var(--text-muted);">
                                     ${batteryText}
@@ -1427,6 +1625,34 @@
         }
 
         deviceSelect.addEventListener('change', updateSimRadioLabels);
+
+        // Select phone number from device card — switches to single tab, selects device + SIM
+        function selectPhoneNumber(deviceId, simSlot) {
+            // Switch to the Single Message Sender tab
+            const singleTabBtn = document.querySelector('.tab-btn');
+            switchTab('single-tab', singleTabBtn);
+
+            // Select the target device in the dropdown
+            deviceSelect.value = deviceId;
+            updateSimRadioLabels();
+
+            // Select the correct SIM slot
+            const simRadio = document.getElementById(`sim-slot-${simSlot}`);
+            if (simRadio && !simRadio.disabled) {
+                simRadio.checked = true;
+            }
+
+            // Scroll the form into view on mobile
+            document.getElementById('single-tab').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Brief visual flash on the form to confirm action
+            const form = document.getElementById('single-form');
+            form.style.transition = 'box-shadow 0.3s ease';
+            form.style.boxShadow = '0 0 0 2px var(--accent)';
+            setTimeout(() => {
+                form.style.boxShadow = 'none';
+            }, 800);
+        }
 
 
 
