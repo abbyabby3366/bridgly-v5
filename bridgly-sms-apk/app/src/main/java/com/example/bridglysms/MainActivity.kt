@@ -100,6 +100,18 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        val powerManager = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            try {
+                val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = android.net.Uri.parse("package:$packageName")
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                android.util.Log.e("BridglySMS", "Failed to launch battery optimization request", e)
+            }
+        }
+
         val filterSent = IntentFilter("com.httpsms.DIRECT_SMS_SENT")
         val filterDelivered = IntentFilter("com.httpsms.DIRECT_SMS_DELIVERED")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -286,6 +298,8 @@ fun SmsGatewayDashboard(
     var connectionState by remember { mutableStateOf(SmsService.connectionState) }
     val logs = remember { mutableStateListOf<String>().apply { addAll(SmsService.logs) } }
     var permissionsGranted by remember { mutableStateOf(checkPermissions()) }
+    val powerManager = remember { context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager }
+    var isIgnoringBattery by remember { mutableStateOf(powerManager.isIgnoringBatteryOptimizations(context.packageName)) }
     var showServerConfigDialog by remember { mutableStateOf(false) }
     var showPermissionsDialog by remember { mutableStateOf(false) }
     var logsExpanded by remember { mutableStateOf(sharedPref.getBoolean("logs_expanded", true)) }
@@ -296,6 +310,7 @@ fun SmsGatewayDashboard(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 permissionsGranted = checkPermissions()
+                isIgnoringBattery = powerManager.isIgnoringBatteryOptimizations(context.packageName)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -754,6 +769,44 @@ fun SmsGatewayDashboard(
                                 fontSize = 14.sp,
                                 fontWeight = if (isGranted) FontWeight.Normal else FontWeight.Bold,
                                 color = if (isGranted) Color.Unspecified else Color(0xFFD32F2F)
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                try {
+                                    val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                        data = android.net.Uri.parse("package:${context.packageName}")
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Could not request background exemption", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = if (isIgnoringBattery) "✅" else "❌",
+                            fontSize = 16.sp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Ignore Battery Optimizations",
+                                fontSize = 14.sp,
+                                fontWeight = if (isIgnoringBattery) FontWeight.Normal else FontWeight.Bold,
+                                color = if (isIgnoringBattery) Color.Unspecified else Color(0xFFD32F2F)
+                            )
+                            Text(
+                                text = "Tap to request background exemption",
+                                fontSize = 11.sp,
+                                color = Color.Gray
                             )
                         }
                     }
