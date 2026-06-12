@@ -696,7 +696,7 @@ app.post('/api/clear-queue', async (req, res) => {
 
 // Single Send Endpoint
 app.post('/api/send', (req, res) => {
-    const { to, message, sim, deviceId, type } = req.body;
+    const { to, message, sim, deviceId, type, retriedFromId } = req.body;
     if (!to || !message) {
         return res.status(400).json({ error: 'Missing "to" or "message" fields' });
     }
@@ -742,6 +742,10 @@ app.post('/api/send', (req, res) => {
         updatedAt: new Date().toISOString()
     };
 
+    if (retriedFromId) {
+        record.retriedFromId = retriedFromId;
+    }
+
     messageHistory.push(record);
     if (messageHistory.length > 500) messageHistory.shift();
 
@@ -760,6 +764,21 @@ app.post('/api/send', (req, res) => {
     });
 
     saveMessage(record);
+
+    // Mark the original failed message as retried (persistent)
+    if (retriedFromId) {
+        const originalMsg = messageHistory.find(m => m.id === retriedFromId);
+        if (originalMsg) {
+            originalMsg.retriedWith = msgId;
+            broadcastToWeb({ type: 'message_update', message: originalMsg });
+            saveMessage(originalMsg);
+        } else if (db) {
+            db.collection('message_history').updateOne(
+                { _id: retriedFromId },
+                { $set: { retriedWith: msgId } }
+            ).catch(e => console.error('Error marking original message as retried:', e.message));
+        }
+    }
 
     res.json({ status: 'queued', id: msgId });
 });

@@ -2118,9 +2118,12 @@
                 const typeBadgeClass = `badge badge-${m.type || 'single'}`;
                 const phoneText = m.deviceModel || '-';
                 const errText = m.error ? `<div style="font-size: 9px; color: var(--danger);">${esc(m.error)}</div>` : '';
-                const retryBtn = m.status === 'failed'
-                    ? `<button class="btn btn-secondary" style="padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1;" onclick="retryMessage('${esc(m.id)}')" title="Resend this message">Retry</button>`
-                    : '';
+                let retryBtn = '';
+                if (m.status === 'failed' && m.retriedWith) {
+                    retryBtn = `<button class="btn btn-secondary" style="padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1; opacity: 0.5; cursor: not-allowed;" disabled>Retried</button>`;
+                } else if (m.status === 'failed') {
+                    retryBtn = `<button class="btn btn-secondary" style="padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1;" onclick="retryMessage('${esc(m.id)}')" title="Resend this message">Retry</button>`;
+                }
                 return `
                     <tr>
                         <td style="color: var(--text-muted); font-weight: 500;">${esc(phoneText)}</td>
@@ -2322,6 +2325,15 @@
                 return;
             }
 
+            // Disable button immediately to prevent duplicate retries
+            const btn = document.querySelector(`button[onclick="retryMessage('${msgId}')"]`);
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Retried';
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            }
+
             appendLog(`Retrying message to ${msg.to} (original ID: ${msgId})...`);
 
             fetch('/api/send', {
@@ -2332,18 +2344,33 @@
                     message: msg.message,
                     sim: msg.sim,
                     deviceId: msg.deviceId,
-                    type: 'RESEND'
+                    type: 'RESEND',
+                    retriedFromId: msgId
                 })
             })
                 .then(res => res.json())
                 .then(data => {
                     if (data.error) {
                         appendLog(`Retry Send Error: ${data.error}`, true);
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = 'Retry';
+                            btn.style.opacity = '';
+                            btn.style.cursor = '';
+                        }
                     } else {
                         appendLog(`Retry SMS Request queued. ID: ${data.id}`);
                     }
                 })
-                .catch(err => appendLog(`Network error retrying SMS: ${err.message}`, true));
+                .catch(err => {
+                    appendLog(`Network error retrying SMS: ${err.message}`, true);
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Retry';
+                        btn.style.opacity = '';
+                        btn.style.cursor = '';
+                    }
+                });
         }
 
         // Collapsible sections initialization
