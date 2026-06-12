@@ -1,0 +1,19 @@
+{
+  "name": "bridgly-sms-server",
+  "version": "1.0.0",
+  "description": "Express and WebSocket server to control Bridgly SMS Gateway Android App",
+  "main": "bridgly-sms-server/server.js",
+  "scripts": {
+    "start": "node bridgly-sms-server/server.js",
+    "dev": "nodemon bridgly-sms-server/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongodb": "^6.8.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

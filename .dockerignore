@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log*
+phone_mappings.json
+settings.json
+server_status.json
+.git
+.gitignore
+.env
+bridgly-sms-apk

@@ -21,6 +21,40 @@ class SmsService : Service() {
     private val gson = Gson()
     private var serverUrl: String = ""
     private var isRunning = false
+    private var networkCallback: android.net.ConnectivityManager.NetworkCallback? = null
+
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val statusUpdateRunnable = object : Runnable {
+        override fun run() {
+            if (isRunning && webSocket != null && connectionState == "Connected") {
+                sendStatusUpdate()
+            }
+            handler.postDelayed(this, 5000)
+        }
+    }
+
+    private fun sendStatusUpdate() {
+        val sharedPref = getSharedPreferences("BridglySmsConfig", Context.MODE_PRIVATE)
+        val deviceId = sharedPref.getString("device_id", "unknown") ?: "unknown"
+        val payload = JsonObject().apply {
+            addProperty("action", "phone_status_update")
+            addProperty("deviceId", deviceId)
+            addProperty("connectionState", connectionState)
+            addProperty("battery", getBatteryLevel())
+        }
+        Thread {
+            try {
+                webSocket?.send(gson.toJson(payload))
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }.start()
+    }
+
+    private fun getBatteryLevel(): Int {
+        val bm = getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager
+        return bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+    }
 
     private val sentAction = "com.httpsms.SMS_SENT"
     private val deliveredAction = "com.httpsms.SMS_DELIVERED"
@@ -99,7 +133,25 @@ class SmsService : Service() {
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .writeTimeout(10, TimeUnit.SECONDS)
             .connectTimeout(10, TimeUnit.SECONDS)
+            .pingInterval(30, TimeUnit.SECONDS)
             .build()
+
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                super.onAvailable(network)
+                addLog("Network available. Checking connection status...")
+                if (isRunning && (webSocket == null || connectionState.startsWith("Disconnected") || connectionState.startsWith("Error"))) {
+                    connectWebSocket()
+                }
+            }
+        }
+        try {
+            connectivityManager.registerDefaultNetworkCallback(networkCallback!!)
+        } catch (e: Exception) {
+            addLog("Failed to register network callback: ${e.message}")
+        }
+        handler.post(statusUpdateRunnable)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -145,8 +197,20 @@ class SmsService : Service() {
         stopSelf()
     }
 
+    @Synchronized
     private fun connectWebSocket() {
         if (!isRunning || serverUrl.isEmpty()) return
+        if ((connectionState == "Connected" || connectionState == "Connecting") && webSocket != null) {
+            return
+        }
+
+        // Close existing socket if any to prevent leaks
+        try {
+            webSocket?.close(1000, "Reconnecting")
+        } catch (e: Exception) {
+            // Ignore
+        }
+        webSocket = null
 
         addLog("Connecting to WebSocket: $serverUrl")
         updateState("Connecting...")
@@ -166,9 +230,27 @@ class SmsService : Service() {
                     addLog("Failed to log SIM info: ${e.message}")
                 }
                 // Send register event
+                val sharedPref = this@SmsService.getSharedPreferences("BridglySmsConfig", Context.MODE_PRIVATE)
+                val deviceId = sharedPref.getString("device_id", "unknown_device") ?: "unknown_device"
+                val sim1SubId = sharedPref.getInt("sim1_sub_id", -1)
+                val sim2SubId = sharedPref.getInt("sim2_sub_id", -1)
+                val sim1Carrier = sharedPref.getString("sim1_carrier", "SIM 1") ?: "SIM 1"
+                val sim2Carrier = sharedPref.getString("sim2_carrier", "SIM 2") ?: "SIM 2"
+                val sim1Number = sharedPref.getString("sim1_number", "") ?: ""
+                val sim2Number = sharedPref.getString("sim2_number", "") ?: ""
+                val isDual = sharedPref.getBoolean("is_dual_sim", false)
+
                 val registerMsg = JsonObject().apply {
                     addProperty("action", "register")
-                    addProperty("isDualSim", SmsManagerService.isDualSIM(this@SmsService))
+                    addProperty("deviceId", deviceId)
+                    addProperty("deviceModel", "${Build.MANUFACTURER} ${Build.MODEL}")
+                    addProperty("isDualSim", isDual)
+                    addProperty("sim1SubId", sim1SubId)
+                    addProperty("sim2SubId", sim2SubId)
+                    addProperty("sim1Carrier", sim1Carrier)
+                    addProperty("sim2Carrier", sim2Carrier)
+                    addProperty("sim1Number", sim1Number)
+                    addProperty("sim2Number", sim2Number)
                 }
                 webSocket.send(gson.toJson(registerMsg))
             }
@@ -276,9 +358,18 @@ class SmsService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacks(statusUpdateRunnable)
         unregisterReceiver(smsSentReceiver)
         unregisterReceiver(smsDeliveredReceiver)
         disconnectWebSocket()
+        try {
+            networkCallback?.let {
+                val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+                connectivityManager.unregisterNetworkCallback(it)
+            }
+        } catch (e: Exception) {
+            // Ignore
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? {

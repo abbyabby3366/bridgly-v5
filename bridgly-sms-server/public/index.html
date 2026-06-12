@@ -3,29 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bridgly SMS Gateway Control Panel</title>
-    <meta name="description" content="Control panel to send SMS programmatically through Android phones in real time.">
-    <!-- Google Fonts -->
+    <title>Bridgly SMS Control Center</title>
+    <meta name="description" content="Clean and minimal SMS Gateway dashboard for dual-SIM Android devices.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-gradient: radial-gradient(circle at top, #1e1b4b, #09090b);
-            --card-bg: rgba(24, 24, 27, 0.65);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --text-primary: #f4f4f5;
-            --text-secondary: #a1a1aa;
-            --accent: #6366f1;
-            --accent-glow: rgba(99, 102, 241, 0.4);
+            --bg: #09090b;
+            --card-bg: #18181b;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
             --success: #10b981;
-            --success-glow: rgba(16, 185, 129, 0.3);
             --warning: #f59e0b;
-            --warning-glow: rgba(245, 158, 11, 0.3);
             --danger: #ef4444;
-            --danger-glow: rgba(239, 68, 68, 0.3);
             --info: #0ea5e9;
-            --info-glow: rgba(14, 165, 233, 0.3);
         }
 
         * {
@@ -36,158 +31,182 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-primary);
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
-            padding: 2rem 1.5rem;
-            overflow-x: hidden;
+            padding: 1rem;
+            font-size: 13px;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1300px;
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
-        /* Header block */
+        /* Header Layout */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--card-border);
+            padding: 0.5rem 0.75rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
         }
 
-        .logo-section h1 {
-            font-size: 1.8rem;
+        .brand h1 {
+            font-size: 1.1rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #a5b4fc, #6366f1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.25rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .logo-section p {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
+        .brand p {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
         .status-badge {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            border: 1px solid var(--card-border);
+            gap: 0.4rem;
+            font-weight: 500;
         }
 
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background-color: var(--danger);
-            box-shadow: 0 0 8px var(--danger-glow);
-            transition: all 0.4s ease;
         }
 
         .status-dot.online {
             background-color: var(--success);
-            box-shadow: 0 0 10px var(--success-glow);
-            animation: pulse 2s infinite;
+            box-shadow: 0 0 6px var(--success);
         }
 
-        .status-text {
-            font-weight: 500;
-            font-size: 0.85rem;
+        /* Rate limit inline setting */
+        .rate-config {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--border);
         }
 
-        /* Grid Layout */
-        .dashboard-grid {
+        .rate-config label {
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        /* Grid */
+        .grid-main {
             display: grid;
-            grid-template-columns: 1.2f 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: 360px 1fr;
+            gap: 0.75rem;
         }
 
         @media (max-width: 900px) {
-            .dashboard-grid {
+            .grid-main {
                 grid-template-columns: 1fr;
             }
         }
 
-        /* Cards Design */
         .card {
             background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 1.75rem;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            transition: transform 0.2s ease, border-color 0.2s ease;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
-        .card:hover {
-            border-color: rgba(255, 255, 255, 0.15);
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
         }
 
         .card-title {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            margin-bottom: 1.25rem;
+            color: #fff;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            color: #fff;
+            gap: 0.35rem;
         }
 
-        /* Form Controls */
+        /* Inputs & Controls */
         .form-group {
-            margin-bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
         }
 
         .form-group label {
-            display: block;
-            font-size: 0.8rem;
+            font-size: 11px;
+            color: var(--text-muted);
             font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
 
         .form-input {
             width: 100%;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 0.85rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.45rem 0.6rem;
             color: #fff;
             font-family: inherit;
-            font-size: 0.95rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.15s;
         }
 
         .form-input:focus {
-            outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 2px var(--accent-glow);
         }
 
         textarea.form-input {
             resize: vertical;
-            min-height: 100px;
+            min-height: 70px;
         }
 
-        /* Segmented Radio SIM Selector */
+        select.form-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 16px;
+            padding-right: 24px;
+        }
+
+        /* SIM Selector Radio Group */
         .sim-selector {
             display: flex;
             background: rgba(0, 0, 0, 0.2);
-            padding: 0.25rem;
-            border-radius: 8px;
-            border: 1px solid var(--card-border);
-            gap: 0.25rem;
+            padding: 0.15rem;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            gap: 0.15rem;
         }
 
         .sim-option {
@@ -198,207 +217,524 @@
         .sim-option input {
             position: absolute;
             opacity: 0;
-            cursor: pointer;
-            height: 0;
             width: 0;
+            height: 0;
         }
 
         .sim-label {
             display: block;
             text-align: center;
-            padding: 0.6rem;
-            font-size: 0.9rem;
+            padding: 0.35rem;
+            font-size: 11px;
             font-weight: 500;
-            border-radius: 6px;
+            border-radius: 3px;
             cursor: pointer;
-            color: var(--text-secondary);
-            transition: all 0.2s ease;
+            color: var(--text-muted);
+            transition: all 0.15s;
         }
 
         .sim-option input:checked + .sim-label {
             background: var(--accent);
             color: #fff;
-            box-shadow: 0 2px 8px var(--accent-glow);
         }
 
         .sim-option input:disabled + .sim-label {
-            opacity: 0.4;
+            opacity: 0.3;
             cursor: not-allowed;
         }
 
         /* Buttons */
         .btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 0.45rem 0.75rem;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 100%;
-            background: linear-gradient(135deg, #818cf8, #4f46e5);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 0.9rem 1.5rem;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px var(--accent-glow);
+            gap: 0.35rem;
         }
 
         .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px var(--accent-glow);
-        }
-
-        .btn:active {
-            transform: translateY(1px);
+            background: var(--accent-hover);
         }
 
         .btn:disabled {
             background: #27272a;
-            color: var(--text-secondary);
+            color: var(--text-muted);
             cursor: not-allowed;
-            box-shadow: none;
-            transform: none;
         }
 
-        /* Console Log View */
-        .log-console {
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* Devices List */
+        .device-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 480px;
+            overflow-y: auto;
+        }
+
+        .device-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .device-card.offline {
+            opacity: 0.6;
+        }
+
+        .device-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .device-title {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .device-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .device-meta {
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .sim-mapping-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .sim-mapping-row label {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        .mini-input {
             background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 1rem;
-            height: 310px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            color: #fff;
+            padding: 0.2rem 0.35rem;
+            font-size: 11px;
+            width: 140px;
+            outline: none;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Tabs configuration */
+        .tab-headers {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            gap: 0.25rem;
+            padding-bottom: 0.15rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.35rem 0.75rem;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        /* Bulk Queue Stats widget */
+        .queue-widget {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(245, 158, 11, 0.05);
+            border: 1px dashed rgba(245, 158, 11, 0.3);
+            border-radius: 4px;
+            padding: 0.45rem 0.6rem;
+        }
+
+        .queue-widget-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+        }
+
+        .queue-widget-title {
+            font-weight: 600;
+            color: var(--warning);
+        }
+
+        .queue-widget-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Bottom panels: Logs & History Split */
+        .split-bottom {
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 900px) {
+            .split-bottom {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Console */
+        .console {
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.5rem;
+            height: 250px;
             overflow-y: auto;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            line-height: 1.5;
-            color: #a7f3d0;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #10b981;
         }
 
-        .log-item {
-            margin-bottom: 0.4rem;
+        .console-line {
+            margin-bottom: 0.25rem;
             white-space: pre-wrap;
         }
 
-        .log-item.error {
-            color: #fca5a5;
+        .console-line.err {
+            color: var(--danger);
         }
 
-        /* Table & History View */
-        .history-card {
-            margin-top: 1.5rem;
-        }
-
-        .table-container {
+        /* History Table UI */
+        .table-wrap {
             overflow-x: auto;
-            margin-top: 1rem;
+            max-height: 400px;
+            height: auto;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        /* Log Search Bar styling */
+        .search-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-clear-btn {
+            position: absolute;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+            line-height: 1;
+            padding: 2px;
+        }
+
+        .search-clear-btn:hover {
+            color: #fff;
+        }
+
+        /* Pagination Footer styling */
+        .pagination-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+            margin-top: auto;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination-info {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .pagination-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 4px;
+            padding: 0.3rem 0.6rem;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-current {
+            font-size: 11px;
+            color: #fff;
+            font-weight: 500;
+            padding: 0 0.5rem;
+            white-space: nowrap;
+        }
+
+        .page-size-select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.25rem 0.4rem;
+            color: #fff;
+            font-size: 11px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .page-size-select:focus {
+            border-color: var(--accent);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 11px;
             text-align: left;
-            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.1);
         }
 
         th {
-            padding: 0.75rem 1rem;
-            color: var(--text-secondary);
+            background: var(--card-bg);
+            padding: 0.5rem;
+            color: var(--text-muted);
             font-weight: 500;
-            border-bottom: 1px solid var(--card-border);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
         }
 
         td {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            color: var(--text-primary);
+            padding: 0.45rem 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            color: var(--text);
         }
 
         tr:hover td {
-            background: rgba(255, 255, 255, 0.01);
+            background: rgba(255, 255, 255, 0.02);
         }
 
         /* Badges */
         .badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.35rem;
-            padding: 0.25rem 0.6rem;
-            border-radius: 50px;
-            font-size: 0.75rem;
+            padding: 0.1rem 0.35rem;
+            border-radius: 3px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.02em;
         }
 
-        .badge-pending {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--warning);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-
-        .badge-sent {
-            background: rgba(14, 165, 233, 0.1);
-            color: var(--info);
-            border: 1px solid rgba(14, 165, 233, 0.2);
-        }
-
-        .badge-delivered {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .badge-failed {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .badge-sim {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-primary);
-            border: 1px solid var(--card-border);
-            padding: 0.15rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-        }
-
-        /* Animations */
-        @keyframes pulse {
-            0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            }
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
-            }
-            100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-            }
-        }
-
-        /* Utility class */
-        .flex-between {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .muted {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-        }
+        .badge-pending { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .badge-sent { background: rgba(14, 165, 233, 0.1); color: var(--info); }
+        .badge-delivered { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .badge-failed { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
 
         .no-data {
             text-align: center;
-            padding: 2.5rem;
-            color: var(--text-secondary);
+            padding: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        /* Settings gear popover */
+        .settings-wrap {
+            position: relative;
+        }
+
+        .gear-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-muted);
+            padding: 0.3rem 0.45rem;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .gear-btn:hover {
+            color: #fff;
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        /* Settings Modal Dialog styling */
+        dialog.settings-modal {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(24, 24, 27, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            color: var(--text);
+            padding: 1.25rem;
+            width: 320px;
+            max-width: 90vw;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+            margin: auto;
+            outline: none;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), display 0.2s cubic-bezier(0.16, 1, 0.3, 1) allow-discrete;
+        }
+
+        dialog.settings-modal[open] {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        @starting-style {
+            dialog.settings-modal[open] {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+        }
+
+        dialog.settings-modal::backdrop {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: opacity 0.2s ease, display 0.2s ease allow-discrete;
+        }
+
+        dialog.settings-modal[open]::backdrop {
+            opacity: 1;
+        }
+
+        @starting-style {
+            dialog.settings-modal[open]::backdrop {
+                opacity: 0;
+            }
+        }
+
+        .settings-dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .settings-dialog-header h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .settings-dialog-header .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0.2rem;
+            transition: color 0.15s;
+        }
+
+        .settings-dialog-header .close-btn:hover {
+            color: #fff;
+        }
+
+        .settings-dialog-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Collapsible logs/history panels styling */
+        .collapsed-content {
+            display: none !important;
+        }
+        .card.collapsed {
+            align-self: start;
+        }
+        .toggle-icon {
+            transition: transform 0.2s ease;
+            display: inline-block;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-left: 0.35rem;
+        }
+        .card.collapsed .toggle-icon {
+            transform: rotate(-90deg);
         }
     </style>
 </head>
@@ -406,264 +742,1111 @@
     <div class="container">
         <!-- Header -->
         <header>
-            <div class="logo-section">
-                <h1>Bridgly SMS</h1>
-                <p>Dual-SIM Local SMS Gateway Control Center</p>
+            <div class="brand">
+                <h1>Bridgly SMS Gateway</h1>
             </div>
-            <div class="status-badge">
-                <div id="phone-dot" class="status-dot"></div>
-                <span id="phone-text" class="status-text">Phone Offline</span>
+            <div class="header-controls">
+                <div class="status-badge">
+                    <div id="status-dot" class="status-dot"></div>
+                    <span id="status-text">All Devices Offline</span>
+                </div>
+                <div class="settings-wrap">
+                    <button class="gear-btn" id="gear-btn" title="Settings">⚙</button>
+                </div>
             </div>
         </header>
 
-        <!-- Grid Layout -->
-        <div class="dashboard-grid">
-            <!-- Left Side: Control -->
+        <!-- Main section layout -->
+        <div class="grid-main">
+            <!-- Left Panel: All Phones Status -->
             <div class="card">
-                <h2 class="card-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                    Send Message
-                </h2>
-                <form id="sms-form">
-                    <div class="form-group">
-                        <label for="to">Recipient Number</label>
-                        <input type="text" id="to" class="form-input" placeholder="+1234567890" required>
-                    </div>
+                <div class="card-header">
+                    <h2 class="card-title">Registered Phones</h2>
+                </div>
+                <div id="devices-container" class="device-list">
+                    <div class="no-data">No registered phones.</div>
+                </div>
+            </div>
 
-                    <div class="form-group">
-                        <label for="message">Message Body</label>
-                        <textarea id="message" class="form-input" placeholder="Type your text message here..." required></textarea>
-                    </div>
+            <!-- Right Panel: Senders -->
+            <div class="card">
+                <div class="tab-headers">
+                    <button class="tab-btn active" onclick="switchTab('single-tab', this)">Single Message Sender</button>
+                    <button class="tab-btn" onclick="switchTab('bulk-tab', this)">Bulk Message Upload (CSV)</button>
+                </div>
 
-                    <div class="form-group">
-                        <label>Select SIM Card</label>
-                        <div class="sim-selector">
-                            <div class="sim-option">
-                                <input type="radio" id="sim1" name="sim" value="1" checked>
-                                <label for="sim1" class="sim-label">SIM 1</label>
+                <!-- Tab 1: Single Sender -->
+                <div id="single-tab" class="tab-pane active">
+                    <form id="single-form">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <div class="form-group">
+                                <label for="device-select">Target Device</label>
+                                <select id="device-select" class="form-input" required>
+                                    <option value=""></option>
+                                </select>
                             </div>
-                            <div class="sim-option">
-                                <input type="radio" id="sim2" name="sim" value="2">
-                                <label for="sim2" class="sim-label" id="sim2-label">SIM 2 (Unavailable)</label>
+                            <div class="form-group">
+                                <label>SIM Card</label>
+                                <div class="sim-selector">
+                                    <div class="sim-option">
+                                        <input type="radio" id="sim-slot-1" name="single-sim" value="1" checked>
+                                        <label for="sim-slot-1" class="sim-label" id="lbl-sim-1">SIM 1</label>
+                                    </div>
+                                    <div class="sim-option">
+                                        <input type="radio" id="sim-slot-2" name="single-sim" value="2">
+                                        <label for="sim-slot-2" class="sim-label" id="lbl-sim-2">SIM 2</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="recipient-number">Recipient Number</label>
+                            <input type="text" id="recipient-number" class="form-input" placeholder="60123344556" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="message-content">Message Body</label>
+                            <textarea id="message-content" class="form-input" placeholder="Enter SMS text content here..." required></textarea>
+                        </div>
+
+                        <button type="submit" id="send-single-btn" class="btn" style="align-self: flex-start;">Send Single SMS</button>
+                    </form>
+                </div>
+
+                <!-- Tab 2: Bulk CSV -->
+                <div id="bulk-tab" class="tab-pane">
+                    <!-- Dynamic Queue Widget -->
+                    <div id="queue-status-widget" class="queue-widget" style="display: none;">
+                        <div class="queue-widget-info">
+                            <span class="queue-widget-title">Bulk Sending Queue Active</span>
+                            <span class="queue-widget-desc" id="queue-desc">Remaining: 0 messages</span>
+                        </div>
+                        <button id="clear-queue-btn" class="btn btn-danger" style="padding: 0.3rem 0.5rem; font-size: 11px;">Cancel Send</button>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.15rem;">
+                            <label for="csv-file" style="margin: 0;">Choose CSV Files</label>
+                            <a href="/sample_bulk.csv" download class="btn btn-secondary" style="text-decoration: none; padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1;">Download Template</a>
+                        </div>
+                        <input type="file" id="csv-file" class="form-input" accept=".csv" multiple style="padding: 0.3rem;">
+                    </div>
+
+                    <!-- CSV preview container -->
+                    <div id="csv-preview-container" style="display: none; margin-top: 0.25rem; border: 1px solid var(--border); border-radius: 4px; padding: 0.5rem; background: rgba(0, 0, 0, 0.15);">
+                        <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.4rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>CSV Preview</span>
+                            <span id="preview-total-count" style="color: var(--info); font-weight: 600;"></span>
+                        </div>
+                        
+                        <!-- CSV Preview Estimation -->
+                        <div id="csv-preview-estimation" style="display: none; margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; font-size: 11px; flex-direction: column; gap: 0.25rem; line-height: 1.4;">
+                            <div>
+                                <span style="color: var(--text); font-weight: 600;">Est. Send Duration:</span>
+                                <span id="preview-est-duration" style="color: var(--success); font-weight: 600;">-</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text); font-weight: 600;">Est. Completion Time:</span>
+                                <span id="preview-est-completion" style="color: var(--info); font-weight: 600;">-</span>
+                            </div>
+                        </div>
+
+                        <div class="table-wrap" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 4px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px; background: rgba(0,0,0,0.4); padding: 0.35rem 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;">Sender</th>
+                                        <th style="width: 90px; background: rgba(0,0,0,0.4); padding: 0.35rem 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;">Recipient</th>
+                                        <th style="background: rgba(0,0,0,0.4); padding: 0.35rem 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;">Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="csv-preview-body">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- CSV Preview Pagination Footer -->
+                        <div id="csv-preview-pagination" style="display: none; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding-top: 0.4rem; border-top: 1px solid var(--border); font-size: 11px;">
+                            <span id="csv-preview-info" style="color: var(--text-muted);">Showing 1-10 of 10</span>
+                            <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                <button id="csv-preview-prev-btn" class="pagination-btn" style="padding: 0.2rem 0.45rem; font-size: 10px;" disabled>&larr; Prev</button>
+                                <span id="csv-preview-page-num" style="color: var(--text); font-weight: 500;">Page 1 of 1</span>
+                                <button id="csv-preview-next-btn" class="pagination-btn" style="padding: 0.2rem 0.45rem; font-size: 10px;" disabled>Next &rarr;</button>
                             </div>
                         </div>
                     </div>
 
-                    <button type="submit" id="send-btn" class="btn" disabled>Send SMS</button>
-                </form>
-            </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+                        <button id="upload-csv-btn" class="btn" disabled>Upload &amp; Queue</button>
+                    </div>
 
-            <!-- Right Side: Live Logs -->
-            <div class="card">
-                <div class="card-title flex-between">
-                    <span style="display:flex; align-items:center; gap:0.5rem;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                        Gateway Logs
-                    </span>
-                    <span class="muted" id="sim-status-desc">Single SIM mode</span>
-                </div>
-                <div class="log-console" id="log-console">
-                    <div class="log-item">Console initialized. Connecting socket...</div>
+                    <!-- Sending rate and estimation info -->
+                    <div class="bulk-info-panel" style="margin-top: 1rem; padding: 0.65rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.4rem; line-height: 1.4;">
+                        <div>
+                            <span style="color: var(--text); font-weight: 600;">Sending Rate:</span> 
+                            <span id="bulk-rate-display" style="color: var(--info); font-weight: 600;">10</span> messages/min 
+                            (approximately <span id="bulk-delay-display" style="color: var(--success); font-weight: 600;">6.0</span> seconds delay between each message)
+                        </div>
+                        <div id="bulk-expected-time-container" style="display: none; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.4rem; margin-top: 0.2rem;">
+                            <div><span style="color: var(--text); font-weight: 600;">Total in Queue:</span> <span id="bulk-queued-count" style="color: var(--warning); font-weight: 600;">0</span> messages</div>
+                            <div><span style="color: var(--text); font-weight: 600;">Est. Queue Duration:</span> <span id="bulk-completion-time" style="color: var(--success); font-weight: 600;">0s</span></div>
+                            <div><span style="color: var(--text); font-weight: 600;">Est. Completion Time:</span> <span id="bulk-completion-clock" style="color: var(--info); font-weight: 600;">-</span></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- History Table -->
-        <div class="card history-card">
-            <h2 class="card-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Message Transmission History
-            </h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Message ID</th>
-                            <th>Recipient</th>
-                            <th>SIM</th>
-                            <th>Content</th>
-                            <th>Status</th>
-                            <th>Sent Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-table-body">
-                        <tr>
-                            <td colspan="6" class="no-data">No messages processed yet.</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- Bottom split section: logs and history table -->
+        <div class="split-bottom">
+            <!-- Left Console Logs -->
+            <div class="card" id="console-card">
+                <div class="card-header" id="console-header" style="cursor: pointer; user-select: none;">
+                    <h2 class="card-title">
+                        <span>Live Gateway Logs</span>
+                        <span class="toggle-icon">▼</span>
+                    </h2>
+                </div>
+                <div id="console-logs" class="console">
+                    <div class="console-line">Console active. Awaiting websocket connection...</div>
+                </div>
+            </div>
+
+            <!-- Right History -->
+            <div class="card" id="history-card">
+                <div class="card-header" id="history-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; cursor: pointer; user-select: none;">
+                    <h2 class="card-title">
+                        <span>Message Transmission Logs</span>
+                        <span class="toggle-icon">▼</span>
+                    </h2>
+                    <div class="search-wrap">
+                        <input type="text" id="log-search" class="form-input" placeholder="Search logs..." style="width: 220px; font-size: 11px; padding: 0.3rem 0.5rem; padding-right: 24px;">
+                        <button id="search-clear" class="search-clear-btn" title="Clear search">&times;</button>
+                    </div>
+                </div>
+                <div id="history-content" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%;">
+                    <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 90px;">Msg ID</th>
+                                <th style="width: 100px;">Recipient</th>
+                                <th style="width: 50px;">SIM</th>
+                                <th>Message</th>
+                                <th style="width: 110px;">Status</th>
+                                <th style="width: 75px;">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body">
+                            <tr>
+                                <td colspan="6" class="no-data">No messages processed.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination Footer -->
+                <div class="pagination-footer">
+                    <div id="pagination-info" class="pagination-info">Showing 0-0 of 0 messages</div>
+                    <div class="pagination-controls">
+                        <button id="prev-page-btn" class="pagination-btn" disabled>&larr; Prev</button>
+                        <span id="page-num-display" class="pagination-current">Page 1 of 1</span>
+                        <button id="next-page-btn" class="pagination-btn" disabled>Next &rarr;</button>
+                        <select id="page-size-select" class="page-size-select" style="margin-left: 0.5rem;">
+                            <option value="10">10 / page</option>
+                            <option value="25" selected>25 / page</option>
+                            <option value="50">50 / page</option>
+                            <option value="100">100 / page</option>
+                        </select>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Client WebSockets Script -->
+    <!-- Settings Dialog -->
+    <dialog id="settings-dialog" class="settings-modal" closedby="any">
+        <div class="settings-dialog-header">
+            <h3>Settings</h3>
+            <button class="close-btn" id="close-settings-btn" aria-label="Close settings">&times;</button>
+        </div>
+        <div class="settings-dialog-body">
+            <div class="form-group">
+                <label for="global-rate">Send Rate (msg/min)</label>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <input type="number" id="global-rate" class="form-input" style="width: 80px; text-align: center; padding: 0.45rem;" value="10" min="1">
+                    <button id="save-rate-btn" class="btn">Save</button>
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 0.5rem;">
+                <label>WebSocket URL</label>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <div style="flex:1; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border); border-radius: 4px; padding: 0.45rem 0.6rem; overflow-x: auto; white-space: nowrap; font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--text); line-height: 1.2;">
+                        <span id="ws-url-display"></span>
+                    </div>
+                    <button id="copy-ws-btn" class="btn btn-secondary" style="padding: 0.45rem 0.6rem;" title="Copy to clipboard">Copy</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Client Script -->
     <script>
-        const form = document.getElementById('sms-form');
-        const sendBtn = document.getElementById('send-btn');
-        const phoneDot = document.getElementById('phone-dot');
-        const phoneText = document.getElementById('phone-text');
-        const logConsole = document.getElementById('log-console');
-        const simStatusDesc = document.getElementById('sim-status-desc');
-        const sim2Radio = document.getElementById('sim2');
-        const sim2Label = document.getElementById('sim2-label');
-        const historyBody = document.getElementById('history-table-body');
+        let ws;
+        let phones = [];
+        let globalSettings = { globalSendRate: 10 };
+        let currentQueueLength = 0;
 
-        let messageHistory = [];
-        let socket;
+        // State for backend-driven pagination and search
+        let currentPage = 1;
+        let pageSize = 25;
+        let searchQuery = '';
+        let displayedMessages = [];
+        let totalMessagesCount = 0;
 
-        function connectWS() {
+        // State for local CSV preview pagination
+        let previewMessages = [];
+        let previewCurrentPage = 1;
+        const previewPageSize = 10;
+
+        // DOM elements
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const rateInput = document.getElementById('global-rate');
+        const saveRateBtn = document.getElementById('save-rate-btn');
+        const devicesContainer = document.getElementById('devices-container');
+        const deviceSelect = document.getElementById('device-select');
+        const lblSim1 = document.getElementById('lbl-sim-1');
+        const lblSim2 = document.getElementById('lbl-sim-2');
+        const simRadio2 = document.getElementById('sim-slot-2');
+        const sendSingleBtn = document.getElementById('send-single-btn');
+        
+        // HTML escaper to prevent XSS
+        function esc(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Parse CSV text supporting quoted values and commas
+        function parseCSV(text) {
+            const lines = [];
+            let row = [];
+            let inQuotes = false;
+            let current = '';
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                const next = text[i+1];
+                if (c === '"') {
+                    if (inQuotes && next === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (c === ',' && !inQuotes) {
+                    row.push(current.trim());
+                    current = '';
+                } else if ((c === '\r' || c === '\n') && !inQuotes) {
+                    if (c === '\r' && next === '\n') {
+                        i++;
+                    }
+                    row.push(current.trim());
+                    if (row.some(x => x !== '')) {
+                        lines.push(row);
+                    }
+                    row = [];
+                    current = '';
+                } else {
+                    current += c;
+                }
+            }
+            if (current !== '' || row.length > 0) {
+                row.push(current.trim());
+                if (row.some(x => x !== '')) {
+                    lines.push(row);
+                }
+            }
+            return lines;
+        }
+
+        // Format relative time for heartbeats
+        function formatRelativeTime(dateInput) {
+            if (!dateInput) return 'Never';
+            const now = new Date();
+            const date = new Date(dateInput);
+            const diffMs = now - date;
+            const diffSecs = Math.floor(diffMs / 1000);
+            const diffMins = Math.floor(diffSecs / 60);
+            const diffHours = Math.floor(diffMins / 60);
+
+            if (diffSecs < 10) {
+                return "just now";
+            }
+            if (diffSecs < 60) {
+                return `${diffSecs} seconds ago`;
+            }
+            if (diffMins < 60) {
+                return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+            }
+            if (diffHours < 24) {
+                return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            }
+            return date.toLocaleString();
+        }
+
+        // Tab switching
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Connect WebSocket
+        function connect() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}`;
-            socket = new WebSocket(wsUrl);
+            ws = new WebSocket(wsUrl);
 
-            socket.onopen = () => {
-                socket.send(JSON.stringify({ action: 'dashboard_connect' }));
-                addLog('Connected to Bridgly server WebSocket.');
+            ws.onopen = () => {
+                ws.send(JSON.stringify({ action: 'dashboard_connect' }));
+                appendLog('WebSocket connection to server established.');
             };
 
-            socket.onmessage = (event) => {
+            ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    
+
                     if (data.type === 'init') {
-                        messageHistory = data.history;
-                        updatePhoneStatus(data.phone);
-                        renderHistory();
-                    } else if (data.type === 'phone_status') {
-                        updatePhoneStatus(data.details);
+                        phones = data.phones || [];
+                        globalSettings = data.settings || { globalSendRate: 10 };
+                        rateInput.value = globalSettings.globalSendRate;
+                        updatePhonesUI();
+                        updateQueueUI(data.queueLength);
+                        fetchMessagesFromServer();
+                    } else if (data.type === 'phones_list') {
+                        phones = data.phones || [];
+                        updatePhonesUI();
                     } else if (data.type === 'message_new') {
-                        messageHistory.push(data.message);
-                        renderHistory();
-                    } else if (data.type === 'message_update') {
-                        const idx = messageHistory.findIndex(m => m.id === data.message.id);
-                        if (idx !== -1) {
-                            messageHistory[idx] = data.message;
-                        } else {
-                            messageHistory.push(data.message);
+                        totalMessagesCount++;
+                        
+                        const query = searchQuery.trim().toLowerCase();
+                        const matchesSearch = !query || (
+                            (data.message.to && data.message.to.toLowerCase().includes(query)) ||
+                            (data.message.message && data.message.message.toLowerCase().includes(query)) ||
+                            (data.message.status && data.message.status.toLowerCase().includes(query)) ||
+                            (data.message.id && data.message.id.toLowerCase().includes(query)) ||
+                            (data.message.deviceModel && data.message.deviceModel.toLowerCase().includes(query))
+                        );
+
+                        if (currentPage === 1 && matchesSearch) {
+                            displayedMessages.unshift(data.message);
+                            if (displayedMessages.length > pageSize) {
+                                displayedMessages.pop();
+                            }
+                            updateHistoryTableUI();
                         }
-                        renderHistory();
+                        updatePaginationUI();
+                    } else if (data.type === 'message_update') {
+                        const idx = displayedMessages.findIndex(m => m.id === data.message.id);
+                        if (idx !== -1) {
+                            displayedMessages[idx] = data.message;
+                            updateHistoryTableUI();
+                        }
                     } else if (data.type === 'log') {
-                        addLog(data.log, false);
+                        appendLog(data.log);
+                    } else if (data.type === 'queue_status') {
+                        updateQueueUI(data.queueLength);
+                        if (data.rate) {
+                            rateInput.value = data.rate;
+                            globalSettings.globalSendRate = parseInt(data.rate);
+                            updateBulkInfoUI(data.queueLength);
+                        }
+                    } else if (data.type === 'settings_update') {
+                        globalSettings = data.settings;
+                        rateInput.value = globalSettings.globalSendRate;
+                        appendLog(`Send rate updated globally: ${globalSettings.globalSendRate} msg/min`);
+                        updateBulkInfoUI(currentQueueLength);
                     }
                 } catch (e) {
-                    console.error('Error handling WebSocket message:', e);
+                    console.error('Error parsing WS message:', e);
                 }
             };
 
-            socket.onclose = () => {
-                addLog('WebSocket connection to server closed. Retrying in 5 seconds...', true);
-                updatePhoneStatus({ online: false, isDualSim: false });
-                setTimeout(connectWS, 5000);
+            ws.onclose = () => {
+                appendLog('WebSocket closed. Attempting reconnect in 5s...', true);
+                phones = [];
+                updatePhonesUI();
+                setTimeout(connect, 5000);
             };
         }
 
-        function updatePhoneStatus(phone) {
-            if (phone.online) {
-                phoneDot.className = 'status-dot online';
-                phoneText.innerText = 'Phone Online';
-                sendBtn.disabled = false;
-                addLog('Phone is online and ready.');
-                
-                if (phone.isDualSim) {
-                    simStatusDesc.innerText = 'Dual SIM mode enabled';
-                    sim2Radio.disabled = false;
-                    sim2Label.innerText = 'SIM 2';
+        // Append to logs
+        const logBox = document.getElementById('console-logs');
+        function appendLog(lineText, isErr = false) {
+            const div = document.createElement('div');
+            div.className = `console-line ${isErr ? 'err' : ''}`;
+            div.innerText = lineText;
+            logBox.appendChild(div);
+            
+            // Limit lines
+            if (logBox.children.length > 200) {
+                logBox.removeChild(logBox.firstChild);
+            }
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        // Update Registered Phones list & controls
+        function updatePhonesUI() {
+            const onlineCount = phones.filter(p => p.online).length;
+            if (onlineCount > 0) {
+                statusDot.className = 'status-dot online';
+                statusText.innerText = `${onlineCount} Device(s) Online`;
+                sendSingleBtn.disabled = false;
+            } else {
+                statusDot.className = 'status-dot';
+                statusText.innerText = 'All Devices Offline';
+                sendSingleBtn.disabled = true;
+            }
+
+            // Render Devices List
+            if (phones.length === 0) {
+                devicesContainer.innerHTML = '<div class="no-data">No registered phones.</div>';
+            } else {
+                devicesContainer.innerHTML = phones.map(p => {
+                    const statusTextHtml = p.online 
+                        ? `<span class="badge badge-delivered" style="font-size: 9px; padding: 1px 3px;">Online</span>`
+                        : `<span class="badge badge-failed" style="font-size: 9px; padding: 1px 3px;">Offline</span>`;
+                    
+                    const batteryText = p.battery !== undefined ? `<span style="color:var(--success)">🔋 ${p.battery}%</span>` : '';
+                    
+                    return `
+                        <div class="device-card ${p.online ? '' : 'offline'}">
+                            <div class="device-card-header">
+                                <span class="device-title">${esc(p.deviceModel)}</span>
+                                ${statusTextHtml}
+                            </div>
+                            <div class="device-meta" style="margin-top: 0.25rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                                    <span style="color: var(--text-muted);">SIM 1 (${esc(p.sim1Carrier)}):</span>
+                                    <strong>${esc(p.sim1Number || 'null')}</strong>
+                                </div>
+                                ${p.isDualSim ? `
+                                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                                    <span style="color: var(--text-muted);">SIM 2 (${esc(p.sim2Carrier)}):</span>
+                                    <strong>${esc(p.sim2Number || 'null')}</strong>
+                                </div>` : ''}
+                                <div style="display: flex; justify-content: space-between; margin-top: 0.35rem; font-size: 10px; color: var(--text-muted);">
+                                    ${batteryText}
+                                    <span>Last Heartbeat: ${formatRelativeTime(p.lastSeen)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Update Single Send Select Menu
+            const currentlySelected = deviceSelect.value;
+            deviceSelect.innerHTML = '<option value=""></option>' +
+                phones.filter(p => p.online).map(p => 
+                    `<option value="${p.deviceId}">${esc(p.deviceModel)}</option>`
+                ).join('');
+            
+            if (phones.some(p => p.deviceId === currentlySelected && p.online)) {
+                deviceSelect.value = currentlySelected;
+            }
+            updateSimRadioLabels();
+        }
+
+        // Update Sim Labels in single send form
+        function updateSimRadioLabels() {
+            const devId = deviceSelect.value;
+            let target = null;
+            if (devId) {
+                target = phones.find(p => p.deviceId === devId);
+            } else {
+                target = phones.find(p => p.online);
+            }
+
+            if (target && target.online) {
+                const sim1Num = target.sim1Number ? ` (${target.sim1Number})` : '';
+                lblSim1.innerText = `SIM 1: ${target.sim1Carrier}${sim1Num}`;
+                if (target.isDualSim) {
+                    simRadio2.disabled = false;
+                    const sim2Num = target.sim2Number ? ` (${target.sim2Number})` : '';
+                    lblSim2.innerText = `SIM 2: ${target.sim2Carrier}${sim2Num}`;
                 } else {
-                    simStatusDesc.innerText = 'Single SIM mode active';
-                    sim2Radio.disabled = true;
-                    sim2Radio.checked = false;
-                    sim2Label.innerText = 'SIM 2 (Unavailable)';
+                    simRadio2.disabled = true;
+                    simRadio2.checked = false;
+                    document.getElementById('sim-slot-1').checked = true;
+                    lblSim2.innerText = 'SIM 2 (None)';
                 }
             } else {
-                phoneDot.className = 'status-dot';
-                phoneText.innerText = 'Phone Offline';
-                sendBtn.disabled = true;
-                simStatusDesc.innerText = 'Offline';
-                sim2Radio.disabled = true;
-                sim2Radio.checked = false;
-                sim2Label.innerText = 'SIM 2 (Unavailable)';
-                addLog('Phone went offline. Cannot send messages.', true);
+                lblSim1.innerText = 'SIM 1';
+                simRadio2.disabled = true;
+                simRadio2.checked = false;
+                document.getElementById('sim-slot-1').checked = true;
+                lblSim2.innerText = 'SIM 2 (None)';
             }
         }
 
-        function addLog(text, isError = false) {
-            const div = document.createElement('div');
-            div.className = `log-item ${isError ? 'error' : ''}`;
-            div.innerText = text;
-            logConsole.appendChild(div);
-            logConsole.scrollTop = logConsole.scrollHeight;
+        deviceSelect.addEventListener('change', updateSimRadioLabels);
+
+
+
+        // Update send rate settings
+        saveRateBtn.addEventListener('click', () => {
+            const rateVal = parseInt(rateInput.value);
+            if (isNaN(rateVal) || rateVal <= 0) {
+                alert('Invalid sending rate');
+                return;
+            }
+            appendLog(`Updating sending rate to ${rateVal} msg/min...`);
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ globalSendRate: rateVal })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    appendLog(`Successfully saved send rate to ${data.settings.globalSendRate} msg/min`);
+                } else {
+                    appendLog(`Error updating send rate: ${data.error}`, true);
+                }
+            })
+            .catch(err => appendLog(`Network error updating settings: ${err.message}`, true));
+        });
+
+        // Single Send Submit
+        document.getElementById('single-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const to = document.getElementById('recipient-number').value.trim();
+            const message = document.getElementById('message-content').value.trim();
+            const sim = document.querySelector('input[name="single-sim"]:checked').value;
+            const deviceId = deviceSelect.value;
+
+            sendSingleBtn.disabled = true;
+            appendLog(`Queuing SMS to ${to} via SIM ${sim}...`);
+
+            fetch('/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to, message, sim, deviceId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    appendLog(`Send Command Error: ${data.error}`, true);
+                } else {
+                    appendLog(`SMS Request queued. ID: ${data.id}`);
+                    document.getElementById('recipient-number').value = '';
+                    document.getElementById('message-content').value = '';
+                }
+            })
+            .catch(err => appendLog(`Network error sending SMS: ${err.message}`, true))
+            .finally(() => {
+                sendSingleBtn.disabled = false;
+            });
+        });
+
+        // Bulk Queue control & file loading
+        const csvFileInput = document.getElementById('csv-file');
+        const uploadCsvBtn = document.getElementById('upload-csv-btn');
+        const queueWidget = document.getElementById('queue-status-widget');
+        const queueDesc = document.getElementById('queue-desc');
+        const clearQueueBtn = document.getElementById('clear-queue-btn');
+
+        csvFileInput.addEventListener('change', async () => {
+            const files = Array.from(csvFileInput.files);
+            const previewContainer = document.getElementById('csv-preview-container');
+            const previewBody = document.getElementById('csv-preview-body');
+            const previewTotalCount = document.getElementById('preview-total-count');
+
+            if (files.length > 0) {
+                uploadCsvBtn.disabled = false;
+                
+                let allMessages = [];
+                for (const file of files) {
+                    try {
+                        const text = await file.text();
+                        const rows = parseCSV(text);
+                        if (rows.length === 0) continue;
+                        
+                        let startIndex = 0;
+                        const firstRow = rows[0];
+                        const isHeader = firstRow.some(cell => {
+                            const c = cell.toLowerCase();
+                            return c.includes('sender') || c.includes('recipient') || c.includes('message') || c.includes('to') || c.includes('content') || c.includes('body');
+                        });
+                        
+                        if (isHeader) {
+                            startIndex = 1;
+                        }
+                        
+                        for (let i = startIndex; i < rows.length; i++) {
+                            const row = rows[i];
+                            if (row.length < 3) continue;
+                            const sender = row[0].trim();
+                            const recipient = row[1].trim();
+                            const message = row[2].trim();
+                            if (sender && recipient && message) {
+                                allMessages.push({ sender, recipient, message });
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error parsing CSV for preview:', err);
+                    }
+                }
+                
+                if (allMessages.length > 0) {
+                    previewMessages = allMessages;
+                    previewCurrentPage = 1;
+                    updateCsvPreviewTableUI();
+                    previewContainer.style.display = 'block';
+                } else {
+                    previewMessages = [];
+                    previewCurrentPage = 1;
+                    updateCsvPreviewTableUI();
+                    previewContainer.style.display = 'block';
+                }
+            } else {
+                uploadCsvBtn.disabled = true;
+                previewMessages = [];
+                previewCurrentPage = 1;
+                updateCsvPreviewTableUI();
+                previewContainer.style.display = 'none';
+            }
+        });
+
+        uploadCsvBtn.addEventListener('click', async () => {
+            const files = Array.from(csvFileInput.files);
+            if (files.length === 0) return;
+
+            uploadCsvBtn.disabled = true;
+            let totalQueued = 0;
+
+            for (const file of files) {
+                appendLog(`Reading CSV file: ${file.name}...`);
+                try {
+                    const text = await file.text();
+                    appendLog(`Uploading ${file.name} to server (${text.length} bytes)...`);
+                    const res = await fetch('/api/upload-csv', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ csvText: text })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        appendLog(`${file.name}: Queued ${data.count} messages.`);
+                        totalQueued += data.count;
+                    } else {
+                        appendLog(`${file.name}: Failed — ${data.error}`, true);
+                    }
+                } catch (err) {
+                    appendLog(`${file.name}: Network error — ${err.message}`, true);
+                }
+            }
+
+            appendLog(`Total queued from ${files.length} file(s): ${totalQueued} messages.`);
+            csvFileInput.value = '';
+            uploadCsvBtn.disabled = true;
+
+            // Clear and hide preview
+            previewMessages = [];
+            previewCurrentPage = 1;
+            const previewContainer = document.getElementById('csv-preview-container');
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+                updateCsvPreviewTableUI();
+            }
+        });
+
+        clearQueueBtn.addEventListener('click', () => {
+            if (!confirm('Are you sure you want to clear the pending bulk queue?')) return;
+            clearQueueBtn.disabled = true;
+            fetch('/api/clear-queue', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    appendLog(`Bulk sending queue cleared successfully.`);
+                }
+            })
+            .catch(err => appendLog(`Network error clearing queue: ${err.message}`, true))
+            .finally(() => {
+                clearQueueBtn.disabled = false;
+            });
+        });
+
+        function updateQueueUI(length) {
+            currentQueueLength = length;
+            if (length > 0) {
+                queueWidget.style.display = 'flex';
+                queueDesc.innerText = `Remaining: ${length} messages (${Math.ceil(length / parseInt(rateInput.value))} min left)`;
+            } else {
+                queueWidget.style.display = 'none';
+            }
+            updateBulkInfoUI(length);
         }
 
-        function getStatusBadgeClass(status) {
-            switch (status) {
-                case 'pending': return 'badge-pending';
-                case 'sent': return 'badge-sent';
-                case 'delivered': return 'badge-delivered';
-                case 'failed': return 'badge-failed';
-                default: return '';
+        // Update sending rate and expected completion time in bulk tab
+        function updateBulkInfoUI(queueLength) {
+            const rate = globalSettings.globalSendRate || 10;
+            const delay = (60 / rate).toFixed(1);
+            
+            const bulkRateDisplay = document.getElementById('bulk-rate-display');
+            const bulkDelayDisplay = document.getElementById('bulk-delay-display');
+            const bulkExpectedTimeContainer = document.getElementById('bulk-expected-time-container');
+            const bulkQueuedCount = document.getElementById('bulk-queued-count');
+            const bulkCompletionTime = document.getElementById('bulk-completion-time');
+
+            if (bulkRateDisplay) bulkRateDisplay.innerText = rate;
+            if (bulkDelayDisplay) bulkDelayDisplay.innerText = delay;
+
+            if (bulkExpectedTimeContainer) {
+                if (queueLength && queueLength > 0) {
+                    bulkExpectedTimeContainer.style.display = 'block';
+                    if (bulkQueuedCount) bulkQueuedCount.innerText = queueLength;
+                    
+                    const totalSecs = Math.ceil(queueLength * (60 / rate));
+                    const mins = Math.floor(totalSecs / 60);
+                    const secs = totalSecs % 60;
+                    let durationText = '';
+                    if (mins > 0) {
+                        durationText += `${mins}m `;
+                    }
+                    durationText += `${secs}s`;
+                    if (bulkCompletionTime) bulkCompletionTime.innerText = durationText;
+
+                    const completionDate = new Date(Date.now() + totalSecs * 1000);
+                    const completionClockText = completionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const bulkCompletionClock = document.getElementById('bulk-completion-clock');
+                    if (bulkCompletionClock) bulkCompletionClock.innerText = completionClockText;
+                } else {
+                    bulkExpectedTimeContainer.style.display = 'none';
+                }
             }
         }
 
-        function renderHistory() {
-            if (messageHistory.length === 0) {
-                historyBody.innerHTML = `<tr><td colspan="6" class="no-data">No messages processed yet.</td></tr>`;
+        // Update CSV Preview Table UI with pagination
+        function updateCsvPreviewTableUI() {
+            const previewBody = document.getElementById('csv-preview-body');
+            const previewContainer = document.getElementById('csv-preview-container');
+            const previewTotalCount = document.getElementById('preview-total-count');
+            const previewPagination = document.getElementById('csv-preview-pagination');
+            const previewInfo = document.getElementById('csv-preview-info');
+            const previewPageNum = document.getElementById('csv-preview-page-num');
+            const previewPrevBtn = document.getElementById('csv-preview-prev-btn');
+            const previewNextBtn = document.getElementById('csv-preview-next-btn');
+
+            if (previewMessages.length === 0) {
+                previewBody.innerHTML = '<tr><td colspan="3" class="no-data">No messages selected or CSV is empty.</td></tr>';
+                previewTotalCount.innerText = '';
+                document.getElementById('csv-preview-estimation').style.display = 'none';
+                previewPagination.style.display = 'none';
                 return;
             }
 
-            const sorted = [...messageHistory].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            // Paginate local messages array
+            const startIndex = (previewCurrentPage - 1) * previewPageSize;
+            const endIndex = Math.min(startIndex + previewPageSize, previewMessages.length);
+            const pageMessages = previewMessages.slice(startIndex, endIndex);
+
+            previewBody.innerHTML = pageMessages.map(m => `
+                <tr>
+                    <td style="word-break: break-all; padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.02);">${esc(m.sender)}</td>
+                    <td style="word-break: break-all; padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.02);"><strong>${esc(m.recipient)}</strong></td>
+                    <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.02);" title="${esc(m.message)}">${esc(m.message)}</td>
+                </tr>
+            `).join('');
+
+            previewTotalCount.innerText = `Total: ${previewMessages.length} message${previewMessages.length > 1 ? 's' : ''}`;
+
+            // Show estimations
+            const rate = globalSettings.globalSendRate || 10;
+            const totalSecs = Math.ceil(previewMessages.length * (60 / rate));
+            const mins = Math.floor(totalSecs / 60);
+            const secs = totalSecs % 60;
+            let durationText = '';
+            if (mins > 0) {
+                durationText += `${mins}m `;
+            }
+            durationText += `${secs}s`;
             
-            historyBody.innerHTML = sorted.map(msg => {
-                const date = new Date(msg.createdAt).toLocaleTimeString();
-                const errorText = msg.error ? ` <span style="display:block; font-size:10px; color:var(--danger)">${msg.error}</span>` : '';
+            const completionDate = new Date(Date.now() + totalSecs * 1000);
+            const completionClockText = completionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            document.getElementById('preview-est-duration').innerText = durationText;
+            document.getElementById('preview-est-completion').innerText = completionClockText;
+            document.getElementById('csv-preview-estimation').style.display = 'flex';
+
+            // Show pagination
+            previewPagination.style.display = 'flex';
+            previewInfo.innerText = `Showing ${startIndex + 1}-${endIndex} of ${previewMessages.length}`;
+            
+            const totalPages = Math.ceil(previewMessages.length / previewPageSize) || 1;
+            previewPageNum.innerText = `Page ${previewCurrentPage} of ${totalPages}`;
+            previewPrevBtn.disabled = previewCurrentPage <= 1;
+            previewNextBtn.disabled = previewCurrentPage >= totalPages;
+        }
+
+        document.getElementById('csv-preview-prev-btn').addEventListener('click', () => {
+            if (previewCurrentPage > 1) {
+                previewCurrentPage--;
+                updateCsvPreviewTableUI();
+            }
+        });
+
+        document.getElementById('csv-preview-next-btn').addEventListener('click', () => {
+            const totalPages = Math.ceil(previewMessages.length / previewPageSize) || 1;
+            if (previewCurrentPage < totalPages) {
+                previewCurrentPage++;
+                updateCsvPreviewTableUI();
+            }
+        });
+
+        // Render Transmission History list (Backend-driven)
+        const historyBody = document.getElementById('history-body');
+        let currentFetchController = null;
+
+        function fetchMessagesFromServer() {
+            if (currentFetchController) {
+                currentFetchController.abort();
+            }
+            currentFetchController = new AbortController();
+            const signal = currentFetchController.signal;
+
+            const url = `/api/messages?page=${currentPage}&limit=${pageSize}&search=${encodeURIComponent(searchQuery)}`;
+
+            fetch(url, { signal })
+                .then(res => res.json())
+                .then(data => {
+                    displayedMessages = data.messages || [];
+                    totalMessagesCount = data.total || 0;
+                    currentPage = data.page || 1;
+                    pageSize = data.limit || 25;
+                    
+                    updateHistoryTableUI();
+                    updatePaginationUI();
+                })
+                .catch(err => {
+                    if (err.name !== 'AbortError') {
+                        appendLog(`Failed to fetch messages: ${err.message}`, true);
+                    }
+                });
+        }
+
+        function updateHistoryTableUI() {
+            if (displayedMessages.length === 0) {
+                historyBody.innerHTML = `<tr><td colspan="6" class="no-data">${searchQuery ? 'No matching messages found.' : 'No messages processed.'}</td></tr>`;
+                return;
+            }
+
+            historyBody.innerHTML = displayedMessages.map(m => {
+                const timeStr = new Date(m.createdAt).toLocaleTimeString();
+                const badgeClass = `badge badge-${m.status}`;
+                const devText = m.deviceModel ? `<div style="font-size: 9px; color: var(--text-muted);">${esc(m.deviceModel)}</div>` : '';
+                const errText = m.error ? `<div style="font-size: 9px; color: var(--danger);">${esc(m.error)}</div>` : '';
                 return `
                     <tr>
-                        <td style="font-family:'JetBrains Mono', monospace; font-size:0.75rem; color:var(--text-secondary)">${msg.id.substring(0,8)}...</td>
-                        <td><strong>${msg.to}</strong></td>
-                        <td><span class="badge-sim">SIM ${msg.sim}</span></td>
-                        <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msg.message}</td>
-                        <td>
-                            <span class="badge ${getStatusBadgeClass(msg.status)}">${msg.status}</span>
-                            ${errorText}
+                        <td style="font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--text-muted)">
+                            ${esc(m.id.substring(0, 8))}...
+                            ${devText}
                         </td>
-                        <td class="muted">${date}</td>
+                        <td><strong>${esc(m.to)}</strong></td>
+                        <td><span style="font-size:10px; opacity:0.8;">SIM ${m.sim}</span></td>
+                        <td style="max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(m.message)}">${esc(m.message)}</td>
+                        <td>
+                            <span class="${badgeClass}">${esc(m.status)}</span>
+                            ${errText}
+                        </td>
+                        <td style="color: var(--text-muted);">${timeStr}</td>
                     </tr>
                 `;
             }).join('');
         }
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const to = document.getElementById('to').value.trim();
-            const message = document.getElementById('message').value.trim();
-            const sim = document.querySelector('input[name="sim"]:checked').value;
+        const paginationInfo = document.getElementById('pagination-info');
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        const nextPageBtn = document.getElementById('next-page-btn');
+        const pageNumDisplay = document.getElementById('page-num-display');
+        const pageSizeSelect = document.getElementById('page-size-select');
 
-            sendBtn.disabled = true;
-            addLog(`Requesting send to ${to} via SIM ${sim}...`);
+        function updatePaginationUI() {
+            const totalPages = Math.ceil(totalMessagesCount / pageSize) || 1;
+            
+            prevPageBtn.disabled = currentPage <= 1;
+            nextPageBtn.disabled = currentPage >= totalPages;
+            
+            pageNumDisplay.innerText = `Page ${currentPage} of ${totalPages}`;
+            
+            if (totalMessagesCount === 0) {
+                paginationInfo.innerText = searchQuery ? 'No matching messages' : 'Showing 0 messages';
+            } else {
+                const start = (currentPage - 1) * pageSize + 1;
+                const end = Math.min(start + pageSize - 1, totalMessagesCount);
+                const filterSuffix = searchQuery ? ' (filtered)' : '';
+                paginationInfo.innerText = `Showing ${start}-${end} of ${totalMessagesCount} messages${filterSuffix}`;
+            }
+            
+            pageSizeSelect.value = pageSize;
+        }
 
-            fetch('/api/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to, message, sim })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) {
-                    addLog(`Server Error: ${data.error}`, true);
-                } else {
-                    addLog(`Message queued. ID: ${data.id}`);
-                    document.getElementById('to').value = '';
-                    document.getElementById('message').value = '';
-                }
-            })
-            .catch(err => {
-                addLog(`Network Error: ${err.message}`, true);
-            })
-            .finally(() => {
-                sendBtn.disabled = false;
-            });
+        // Search & Pagination event listeners
+        const logSearchInput = document.getElementById('log-search');
+        const searchClearBtn = document.getElementById('search-clear');
+        let searchTimeout = null;
+
+        logSearchInput.addEventListener('input', () => {
+            const val = logSearchInput.value;
+            searchQuery = val;
+            
+            if (val) {
+                searchClearBtn.style.display = 'block';
+            } else {
+                searchClearBtn.style.display = 'none';
+            }
+            
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                fetchMessagesFromServer();
+            }, 250);
         });
 
-        connectWS();
+        searchClearBtn.addEventListener('click', () => {
+            logSearchInput.value = '';
+            searchQuery = '';
+            searchClearBtn.style.display = 'none';
+            currentPage = 1;
+            fetchMessagesFromServer();
+        });
+
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchMessagesFromServer();
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(totalMessagesCount / pageSize) || 1;
+            if (currentPage < totalPages) {
+                currentPage++;
+                fetchMessagesFromServer();
+            }
+        });
+
+        pageSizeSelect.addEventListener('change', (e) => {
+            pageSize = parseInt(e.target.value) || 25;
+            currentPage = 1;
+            fetchMessagesFromServer();
+        });
+
+        // Collapsible sections initialization
+        const consoleCard = document.getElementById('console-card');
+        const consoleLogs = document.getElementById('console-logs');
+        const consoleHeader = document.getElementById('console-header');
+
+        const historyCard = document.getElementById('history-card');
+        const historyContent = document.getElementById('history-content');
+        const historyHeader = document.getElementById('history-header');
+
+        function initCollapsible() {
+            const consoleCollapsed = localStorage.getItem('console_collapsed') === 'true';
+            if (consoleCollapsed) {
+                consoleCard.classList.add('collapsed');
+                consoleLogs.classList.add('collapsed-content');
+            }
+
+            const historyCollapsed = localStorage.getItem('history_collapsed') === 'true';
+            if (historyCollapsed) {
+                historyCard.classList.add('collapsed');
+                historyContent.classList.add('collapsed-content');
+            }
+
+            consoleHeader.addEventListener('click', () => {
+                const isCollapsed = consoleCard.classList.toggle('collapsed');
+                consoleLogs.classList.toggle('collapsed-content', isCollapsed);
+                localStorage.setItem('console_collapsed', isCollapsed);
+            });
+
+            historyHeader.addEventListener('click', (e) => {
+                if (e.target.closest('.search-wrap') || e.target.closest('input') || e.target.closest('button')) return;
+                const isCollapsed = historyCard.classList.toggle('collapsed');
+                historyContent.classList.toggle('collapsed-content', isCollapsed);
+                localStorage.setItem('history_collapsed', isCollapsed);
+            });
+        }
+
+        initCollapsible();
+
+        // Initialize websocket connection
+        connect();
+
+        // Initialize bulk sending rate info displays
+        updateBulkInfoUI(0);
+
+        // Periodically refresh relative times in the Registered Phones list
+        setInterval(updatePhonesUI, 10000);
+
+        // Settings dialog/modal controls
+        const gearBtn = document.getElementById('gear-btn');
+        const settingsDialog = document.getElementById('settings-dialog');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        const wsUrlDisplay = document.getElementById('ws-url-display');
+        const copyWsBtn = document.getElementById('copy-ws-btn');
+
+        gearBtn.addEventListener('click', () => {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            wsUrlDisplay.textContent = `${protocol}//${window.location.host}`;
+            settingsDialog.showModal();
+        });
+
+        closeSettingsBtn.addEventListener('click', () => {
+            settingsDialog.close();
+        });
+
+        // Fallback for light dismiss on older browsers/Safari
+        if (!('closedBy' in HTMLDialogElement.prototype)) {
+            settingsDialog.addEventListener('click', (event) => {
+                if (event.target !== settingsDialog) return;
+                const rect = settingsDialog.getBoundingClientRect();
+                const isDialogContent = (
+                    rect.top <= event.clientY &&
+                    event.clientY <= rect.top + rect.height &&
+                    rect.left <= event.clientX &&
+                    event.clientX <= rect.left + rect.width
+                );
+                if (!isDialogContent) {
+                    settingsDialog.close();
+                }
+            });
+        }
+
+        // Copy WebSocket URL feature with feedback micro-animation
+        copyWsBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(wsUrlDisplay.textContent).then(() => {
+                const originalText = copyWsBtn.textContent;
+                copyWsBtn.textContent = 'Copied!';
+                copyWsBtn.style.borderColor = 'var(--success)';
+                copyWsBtn.style.color = 'var(--success)';
+                setTimeout(() => {
+                    copyWsBtn.textContent = originalText;
+                    copyWsBtn.style.borderColor = '';
+                    copyWsBtn.style.color = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        });
     </script>
 </body>
 </html>

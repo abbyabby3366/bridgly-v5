@@ -1,8 +1,66 @@
-.idea
+# IDE / Editor / System Files
+.idea/
+.vscode/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# OS / Log / Temp Files
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Node.js / Yarn / npm / pnpm
+node_modules/
+jspm_packages/
+.npm/
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+.cache/
+
+# Frontend Frameworks (Nuxt / Next / Vue / React)
+.nuxt/
+dist/
+.output/
+.next/
+.serverless/
+.vuepress/dist/
+
+# Android & Gradle Build Artifacts
+.gradle/
+local.properties
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+android/app/debug/
+android/app/release/
+
+# Go / Compiled Binaries
+*main.exe*
+tmp/
+
+# Secrets & Environment variables
 .env*
 !.env.docker
 !.env.production
 *serviceAccountKey.json
-android/app/debug/
-*main.exe*
-android/app/release/
+
+# Bridgly SMS Runtime Data
+phone_mappings.json
+settings.json
+server_status.json
