@@ -21,6 +21,8 @@ async function connectMongo() {
         // Create indexes
         await db.collection('message_history').createIndex({ createdAt: -1 });
         await db.collection('message_history').createIndex({ status: 1 });
+        await db.collection('bulk_queue').createIndex({ senderKey: 1 });
+        await db.collection('bulk_queue').createIndex({ createdAt: 1 });
     } catch (e) {
         console.error('Failed to connect to MongoDB:', e.message);
         process.exit(1);
@@ -118,6 +120,30 @@ async function loadPersistence() {
         messageHistory.push(...historyDocs.reverse());
         
         console.log(`Loaded from MongoDB: ${messageHistory.length} messages`);
+
+        // Load pending bulk queue from MongoDB
+        const queueDocs = await db.collection('bulk_queue')
+            .find({})
+            .sort({ createdAt: 1 })
+            .toArray();
+        deviceQueues.clear();
+        for (const doc of queueDocs) {
+            const senderKey = doc.senderKey;
+            if (!deviceQueues.has(senderKey)) {
+                deviceQueues.set(senderKey, { messages: [], lastSentTime: 0 });
+            }
+            deviceQueues.get(senderKey).messages.push({
+                sender: doc.sender,
+                recipient: doc.recipient,
+                message: doc.message,
+                id: doc._id,
+                createdAt: doc.createdAt
+            });
+        }
+        const pendingCount = getQueueLength();
+        if (pendingCount > 0) {
+            console.log(`Restored ${pendingCount} pending bulk queue messages across ${deviceQueues.size} device queue(s)`);
+        }
     } catch (e) {
         console.error('Error loading from MongoDB:', e.message);
     }
@@ -147,6 +173,13 @@ async function saveMessage(record) {
     } catch (e) {
         console.error('Error saving message to MongoDB:', e.message);
     }
+}
+
+// Remove a processed message from the persistent bulk queue
+function removeFromQueueDB(id) {
+    if (!db) return;
+    db.collection('bulk_queue').deleteOne({ _id: id })
+        .catch(e => console.error('Error removing queue item from MongoDB:', e.message));
 }
 
 function getPhonesList() {
@@ -241,6 +274,9 @@ function processBulkQueue() {
         queue.lastSentTime = now;
         sentAny = true;
         const task = queue.messages.shift();
+
+        // Remove from MongoDB queue
+        removeFromQueueDB(task.id);
 
         // Route using dynamic phone number sent by connected devices
         let foundDevice = null;
@@ -561,7 +597,7 @@ app.post('/api/clear-messages', async (req, res) => {
 });
 
 // CSV Upload Endpoint
-app.post('/api/upload-csv', (req, res) => {
+app.post('/api/upload-csv', async (req, res) => {
     const { csvText } = req.body;
     if (!csvText) {
         return res.status(400).json({ error: 'Missing CSV text data' });
@@ -586,6 +622,7 @@ app.post('/api/upload-csv', (req, res) => {
         }
 
         let queuedCount = 0;
+        const dbDocs = [];
         for (let i = startIndex; i < rows.length; i++) {
             const row = rows[i];
             if (row.length < 3) continue;
@@ -596,6 +633,9 @@ app.post('/api/upload-csv', (req, res) => {
 
             if (sender && recipient && message) {
                 const senderKey = normalizePhoneNumber(sender);
+                const id = generateUUID();
+                const createdAt = new Date().toISOString();
+
                 if (!deviceQueues.has(senderKey)) {
                     deviceQueues.set(senderKey, { messages: [], lastSentTime: 0 });
                 }
@@ -603,10 +643,29 @@ app.post('/api/upload-csv', (req, res) => {
                     sender,
                     recipient,
                     message,
-                    id: generateUUID(),
-                    createdAt: new Date().toISOString()
+                    id,
+                    createdAt
+                });
+
+                // Prepare DB document
+                dbDocs.push({
+                    _id: id,
+                    senderKey,
+                    sender,
+                    recipient,
+                    message,
+                    createdAt
                 });
                 queuedCount++;
+            }
+        }
+
+        // Persist to MongoDB in bulk
+        if (db && dbDocs.length > 0) {
+            try {
+                await db.collection('bulk_queue').insertMany(dbDocs, { ordered: false });
+            } catch (e) {
+                console.error('Error persisting bulk queue to MongoDB:', e.message);
             }
         }
 
@@ -619,9 +678,17 @@ app.post('/api/upload-csv', (req, res) => {
 });
 
 // Clear Bulk Queue
-app.post('/api/clear-queue', (req, res) => {
+app.post('/api/clear-queue', async (req, res) => {
     const originalCount = getQueueLength();
     deviceQueues.clear();
+    // Clear from MongoDB
+    if (db) {
+        try {
+            await db.collection('bulk_queue').deleteMany({});
+        } catch (e) {
+            console.error('Error clearing bulk queue from MongoDB:', e.message);
+        }
+    }
     addLog(`Bulk SMS Queue cleared. ${originalCount} messages removed.`);
     broadcastQueueStatus();
     res.json({ success: true, count: originalCount });
