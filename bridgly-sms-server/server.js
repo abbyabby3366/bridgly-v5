@@ -417,44 +417,59 @@ function addLog(msg) {
 app.get('/download-apk', (req, res) => {
     // 1. Try to find the latest APK in the project root directory (starting with 'bridgly-v' and ending with '.apk')
     const rootDir = path.resolve(__dirname, '..');
+    console.log(`[APK Download] Searching in rootDir: ${rootDir}`);
     try {
         if (fs.existsSync(rootDir)) {
             const files = fs.readdirSync(rootDir);
+            console.log(`[APK Download] Files in rootDir:`, files);
             const apkFiles = files.filter(f => f.toLowerCase().startsWith('bridgly-v') && f.toLowerCase().endsWith('.apk'));
+            console.log(`[APK Download] Filtered APK files:`, apkFiles);
             if (apkFiles.length > 0) {
                 // Sort to get the latest version (e.g. bridgly-v5.0.apk) descending
                 apkFiles.sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
                 const latestApk = apkFiles[0];
                 const apkPath = path.join(rootDir, latestApk);
+                console.log(`[APK Download] Serving latest APK: ${apkPath}`);
                 return res.download(apkPath, latestApk);
             }
+        } else {
+            console.log(`[APK Download] rootDir does not exist`);
         }
     } catch (err) {
-        console.error('Error reading root directory for APKs:', err);
+        console.error('[APK Download] Error reading root directory for APKs:', err);
     }
 
     // 2. Fallback: Try to find the APK in the Android app build outputs directory
     const apkDir = path.resolve(__dirname, '..', 'bridgly-sms-apk', 'app', 'build', 'outputs', 'apk', 'debug');
+    console.log(`[APK Download] Falling back to apkDir: ${apkDir}`);
     try {
         if (fs.existsSync(apkDir)) {
             const files = fs.readdirSync(apkDir);
             const apkFile = files.find(f => f.endsWith('.apk'));
             if (apkFile) {
                 const apkPath = path.join(apkDir, apkFile);
+                console.log(`[APK Download] Serving build output APK: ${apkPath}`);
                 return res.download(apkPath, apkFile);
             }
         }
     } catch (err) {
-        console.error('Error reading Android build directory:', err);
+        console.error('[APK Download] Error reading Android build directory:', err);
     }
 
     // 3. Fallback to server's public folder
     const fallbackPath = path.join(__dirname, 'public', 'bridgly-sms-gateway.apk');
+    console.log(`[APK Download] Falling back to public path: ${fallbackPath}`);
     if (fs.existsSync(fallbackPath)) {
+        console.log(`[APK Download] Serving public folder APK: ${fallbackPath}`);
         return res.download(fallbackPath, 'bridgly-sms-gateway.apk');
     }
 
-    res.status(404).send('APK file not found. Please place an APK in the root directory (matching "bridgly-v*.apk") or build the Android app.');
+    res.status(404).send(`APK file not found.\n\n` +
+        `Paths searched:\n` +
+        `1. Project root: ${rootDir} (looking for files matching "bridgly-v*.apk")\n` +
+        `2. Build output: ${apkDir}\n` +
+        `3. Public fallback: ${fallbackPath}\n\n` +
+        `Please ensure the APK is placed in one of these locations.`);
 });
 
 // Settings Management

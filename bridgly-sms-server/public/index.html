@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,9 @@
     <meta name="description" content="Clean and minimal SMS Gateway dashboard for dual-SIM Android devices.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg: #09090b;
@@ -233,12 +236,12 @@
             transition: all 0.15s;
         }
 
-        .sim-option input:checked + .sim-label {
+        .sim-option input:checked+.sim-label {
             background: var(--accent);
             color: #fff;
         }
 
-        .sim-option input:disabled + .sim-label {
+        .sim-option input:disabled+.sim-label {
             opacity: 0.3;
             cursor: not-allowed;
         }
@@ -603,12 +606,35 @@
             text-transform: uppercase;
         }
 
-        .badge-pending { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
-        .badge-sent { background: rgba(14, 165, 233, 0.1); color: var(--info); }
-        .badge-delivered { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-        .badge-failed { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-        .badge-single { background: rgba(79, 70, 229, 0.1); color: #818cf8; }
-        .badge-bulk { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .badge-pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .badge-sent {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--info);
+        }
+
+        .badge-delivered {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .badge-failed {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .badge-single {
+            background: rgba(79, 70, 229, 0.1);
+            color: #818cf8;
+        }
+
+        .badge-bulk {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
 
         .no-data {
             text-align: center;
@@ -635,7 +661,7 @@
 
         .gear-btn:hover {
             color: #fff;
-            border-color: rgba(255,255,255,0.2);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         /* Settings Modal Dialog styling */
@@ -729,9 +755,11 @@
         .collapsed-content {
             display: none !important;
         }
+
         .card.collapsed {
             align-self: start;
         }
+
         .toggle-icon {
             transition: transform 0.2s ease;
             display: inline-block;
@@ -739,17 +767,19 @@
             color: var(--text-muted);
             margin-left: 0.35rem;
         }
+
         .card.collapsed .toggle-icon {
             transform: rotate(-90deg);
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
         <header>
             <div class="brand">
-                <h1>Bridgly SMS Gateway</h1>
+                <h1>Bridgly SMS Gateway v5.0</h1>
             </div>
             <div class="header-controls">
                 <div class="status-badge">
@@ -757,7 +787,8 @@
                     <span id="status-text">All Devices Offline</span>
                 </div>
                 <a href="/download-apk" class="btn btn-secondary" title="Download Latest Android APK">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>
                         <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -778,7 +809,8 @@
                     <h2 class="card-title">Registered Phones</h2>
                 </div>
                 <div class="search-wrap" style="padding: 0 0.25rem;">
-                    <input type="text" id="phone-search" class="form-input" placeholder="Search phones..." style="padding-right: 24px;">
+                    <input type="text" id="phone-search" class="form-input" placeholder="Search phones..."
+                        style="padding-right: 24px;">
                     <button id="phone-search-clear" class="search-clear-btn" style="right: 8px;">×</button>
                 </div>
                 <div id="devices-container" class="device-list">
@@ -789,7 +821,8 @@
             <!-- Right Panel: Senders -->
             <div class="card">
                 <div class="tab-headers">
-                    <button class="tab-btn active" onclick="switchTab('single-tab', this)">Single Message Sender</button>
+                    <button class="tab-btn active" onclick="switchTab('single-tab', this)">Single Message
+                        Sender</button>
                     <button class="tab-btn" onclick="switchTab('bulk-tab', this)">Bulk Message Upload (CSV)</button>
                 </div>
 
@@ -820,15 +853,18 @@
 
                         <div class="form-group">
                             <label for="recipient-number">Recipient Number</label>
-                            <input type="text" id="recipient-number" class="form-input" placeholder="60123344556" required>
+                            <input type="text" id="recipient-number" class="form-input" placeholder="60123344556"
+                                required>
                         </div>
 
                         <div class="form-group">
                             <label for="message-content">Message Body</label>
-                            <textarea id="message-content" class="form-input" placeholder="Enter SMS text content here..." required></textarea>
+                            <textarea id="message-content" class="form-input"
+                                placeholder="Enter SMS text content here..." required></textarea>
                         </div>
 
-                        <button type="submit" id="send-single-btn" class="btn" style="align-self: flex-start;">Send Single SMS</button>
+                        <button type="submit" id="send-single-btn" class="btn" style="align-self: flex-start;">Send
+                            Single SMS</button>
                     </form>
                 </div>
 
@@ -840,29 +876,38 @@
                             <span class="queue-widget-title">Bulk Sending Queue Active</span>
                             <span class="queue-widget-desc" id="queue-desc">Remaining: 0 messages</span>
                         </div>
-                        <button id="clear-queue-btn" class="btn btn-danger" style="padding: 0.3rem 0.5rem; font-size: 11px;">Cancel Send</button>
+                        <button id="clear-queue-btn" class="btn btn-danger"
+                            style="padding: 0.3rem 0.5rem; font-size: 11px;">Cancel Send</button>
                     </div>
 
                     <div class="form-group">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.15rem;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.15rem;">
                             <label for="csv-file" style="margin: 0;">Choose CSV Files</label>
-                            <a href="/sample_bulk.csv" download class="btn btn-secondary" style="text-decoration: none; padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1;">Download Template</a>
+                            <a href="/sample_bulk.csv" download class="btn btn-secondary"
+                                style="text-decoration: none; padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1;">Download
+                                Template</a>
                         </div>
-                        <input type="file" id="csv-file" class="form-input" accept=".csv" multiple style="padding: 0.3rem;">
+                        <input type="file" id="csv-file" class="form-input" accept=".csv" multiple
+                            style="padding: 0.3rem;">
                     </div>
 
                     <!-- CSV preview container -->
-                    <div id="csv-preview-container" style="display: none; margin-top: 0.25rem; border: 1px solid var(--border); border-radius: 4px; padding: 0.5rem; background: rgba(0, 0, 0, 0.15);">
-                        <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.4rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div id="csv-preview-container"
+                        style="display: none; margin-top: 0.25rem; border: 1px solid var(--border); border-radius: 4px; padding: 0.5rem; background: rgba(0, 0, 0, 0.15);">
+                        <div
+                            style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.4rem; display: flex; justify-content: space-between; align-items: center;">
                             <span>CSV Preview</span>
                             <span id="preview-total-count" style="color: var(--info); font-weight: 600;"></span>
                         </div>
-                        
+
                         <!-- CSV Preview Estimation -->
-                        <div id="csv-preview-estimation" style="display: none; margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; font-size: 11px; flex-direction: column; gap: 0.25rem; line-height: 1.4;">
+                        <div id="csv-preview-estimation"
+                            style="display: none; margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; font-size: 11px; flex-direction: column; gap: 0.25rem; line-height: 1.4;">
                             <div>
                                 <span style="color: var(--text); font-weight: 600;">Est. Send Duration:</span>
-                                <span id="preview-est-duration" style="color: var(--success); font-weight: 600;">-</span>
+                                <span id="preview-est-duration"
+                                    style="color: var(--success); font-weight: 600;">-</span>
                             </div>
                             <div>
                                 <span style="color: var(--text); font-weight: 600;">Est. Completion Time:</span>
@@ -870,13 +915,20 @@
                             </div>
                         </div>
 
-                        <div class="table-wrap" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 4px;">
+                        <div class="table-wrap"
+                            style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 4px;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                                 <thead>
                                     <tr>
-                                        <th style="width: 80px; background: rgba(0,0,0,0.4); padding: 0.35rem 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;">Sender</th>
-                                        <th style="width: 90px; background: rgba(0,0,0,0.4); padding: 0.35rem 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;">Recipient</th>
-                                        <th style="background: rgba(0,0,0,0.4); padding: 0.35rem 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;">Message</th>
+                                        <th
+                                            style="width: 80px; background: rgba(0,0,0,0.4); padding: 0.35rem 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;">
+                                            Sender</th>
+                                        <th
+                                            style="width: 90px; background: rgba(0,0,0,0.4); padding: 0.35rem 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;">
+                                            Recipient</th>
+                                        <th
+                                            style="background: rgba(0,0,0,0.4); padding: 0.35rem 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;">
+                                            Message</th>
                                     </tr>
                                 </thead>
                                 <tbody id="csv-preview-body">
@@ -885,12 +937,16 @@
                         </div>
 
                         <!-- CSV Preview Pagination Footer -->
-                        <div id="csv-preview-pagination" style="display: none; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding-top: 0.4rem; border-top: 1px solid var(--border); font-size: 11px;">
+                        <div id="csv-preview-pagination"
+                            style="display: none; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding-top: 0.4rem; border-top: 1px solid var(--border); font-size: 11px;">
                             <span id="csv-preview-info" style="color: var(--text-muted);">Showing 1-10 of 10</span>
                             <div style="display: flex; align-items: center; gap: 0.35rem;">
-                                <button id="csv-preview-prev-btn" class="pagination-btn" style="padding: 0.2rem 0.45rem; font-size: 10px;" disabled>&larr; Prev</button>
-                                <span id="csv-preview-page-num" style="color: var(--text); font-weight: 500;">Page 1 of 1</span>
-                                <button id="csv-preview-next-btn" class="pagination-btn" style="padding: 0.2rem 0.45rem; font-size: 10px;" disabled>Next &rarr;</button>
+                                <button id="csv-preview-prev-btn" class="pagination-btn"
+                                    style="padding: 0.2rem 0.45rem; font-size: 10px;" disabled>&larr; Prev</button>
+                                <span id="csv-preview-page-num" style="color: var(--text); font-weight: 500;">Page 1 of
+                                    1</span>
+                                <button id="csv-preview-next-btn" class="pagination-btn"
+                                    style="padding: 0.2rem 0.45rem; font-size: 10px;" disabled>Next &rarr;</button>
                             </div>
                         </div>
                     </div>
@@ -900,16 +956,27 @@
                     </div>
 
                     <!-- Sending rate and estimation info -->
-                    <div class="bulk-info-panel" style="margin-top: 1rem; padding: 0.65rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.4rem; line-height: 1.4;">
+                    <div class="bulk-info-panel"
+                        style="margin-top: 1rem; padding: 0.65rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.4rem; line-height: 1.4;">
                         <div>
-                            <span style="color: var(--text); font-weight: 600;">Sending Rate:</span> 
-                            <span id="bulk-rate-display" style="color: var(--info); font-weight: 600;">10</span> messages/min 
-                            (approximately <span id="bulk-delay-display" style="color: var(--success); font-weight: 600;">6.0</span> seconds delay between each message)
+                            <span style="color: var(--text); font-weight: 600;">Sending Rate:</span>
+                            <span id="bulk-rate-display" style="color: var(--info); font-weight: 600;">10</span>
+                            messages/min
+                            (approximately <span id="bulk-delay-display"
+                                style="color: var(--success); font-weight: 600;">6.0</span> seconds delay between each
+                            message)
                         </div>
-                        <div id="bulk-expected-time-container" style="display: none; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.4rem; margin-top: 0.2rem;">
-                            <div><span style="color: var(--text); font-weight: 600;">Total in Queue:</span> <span id="bulk-queued-count" style="color: var(--warning); font-weight: 600;">0</span> messages</div>
-                            <div><span style="color: var(--text); font-weight: 600;">Est. Queue Duration:</span> <span id="bulk-completion-time" style="color: var(--success); font-weight: 600;">0s</span></div>
-                            <div><span style="color: var(--text); font-weight: 600;">Est. Completion Time:</span> <span id="bulk-completion-clock" style="color: var(--info); font-weight: 600;">-</span></div>
+                        <div id="bulk-expected-time-container"
+                            style="display: none; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.4rem; margin-top: 0.2rem;">
+                            <div><span style="color: var(--text); font-weight: 600;">Total in Queue:</span> <span
+                                    id="bulk-queued-count" style="color: var(--warning); font-weight: 600;">0</span>
+                                messages</div>
+                            <div><span style="color: var(--text); font-weight: 600;">Est. Queue Duration:</span> <span
+                                    id="bulk-completion-time" style="color: var(--success); font-weight: 600;">0s</span>
+                            </div>
+                            <div><span style="color: var(--text); font-weight: 600;">Est. Completion Time:</span> <span
+                                    id="bulk-completion-clock" style="color: var(--info); font-weight: 600;">-</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -933,56 +1000,59 @@
 
             <!-- Right History -->
             <div class="card" id="history-card">
-                <div class="card-header" id="history-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; cursor: pointer; user-select: none;">
+                <div class="card-header" id="history-header"
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; cursor: pointer; user-select: none;">
                     <h2 class="card-title">
                         <span>Message Transmission Logs</span>
                         <span class="toggle-icon">▼</span>
                     </h2>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <button id="clear-logs-btn" class="btn btn-danger" style="padding: 0.3rem 0.5rem; font-size: 11px;">Clear Logs</button>
+                        <button id="clear-logs-btn" class="btn btn-danger"
+                            style="padding: 0.3rem 0.5rem; font-size: 11px;">Clear Logs</button>
                         <div class="search-wrap">
-                            <input type="text" id="log-search" class="form-input" placeholder="Search logs..." style="width: 220px; font-size: 11px; padding: 0.3rem 0.5rem; padding-right: 24px;">
+                            <input type="text" id="log-search" class="form-input" placeholder="Search logs..."
+                                style="width: 220px; font-size: 11px; padding: 0.3rem 0.5rem; padding-right: 24px;">
                             <button id="search-clear" class="search-clear-btn" title="Clear search">&times;</button>
                         </div>
                     </div>
                 </div>
                 <div id="history-content" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%;">
                     <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 130px;">Phone</th>
-                                <th style="width: 70px;">Type</th>
-                                <th style="width: 100px;">Sender</th>
-                                <th style="width: 100px;">Recipient</th>
-                                <th style="width: 50px;">SIM</th>
-                                <th>Message</th>
-                                <th style="width: 110px;">Status</th>
-                                <th style="width: 140px;">Date / Time</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-body">
-                            <tr>
-                                <td colspan="8" class="no-data">No messages processed.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <!-- Pagination Footer -->
-                <div class="pagination-footer">
-                    <div id="pagination-info" class="pagination-info">Showing 0-0 of 0 messages</div>
-                    <div class="pagination-controls">
-                        <button id="prev-page-btn" class="pagination-btn" disabled>&larr; Prev</button>
-                        <span id="page-num-display" class="pagination-current">Page 1 of 1</span>
-                        <button id="next-page-btn" class="pagination-btn" disabled>Next &rarr;</button>
-                        <select id="page-size-select" class="page-size-select" style="margin-left: 0.5rem;">
-                            <option value="10">10 / page</option>
-                            <option value="25" selected>25 / page</option>
-                            <option value="50">50 / page</option>
-                            <option value="100">100 / page</option>
-                        </select>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 130px;">Phone</th>
+                                    <th style="width: 70px;">Type</th>
+                                    <th style="width: 100px;">Sender</th>
+                                    <th style="width: 100px;">Recipient</th>
+                                    <th style="width: 50px;">SIM</th>
+                                    <th>Message</th>
+                                    <th style="width: 110px;">Status</th>
+                                    <th style="width: 140px;">Date / Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body">
+                                <tr>
+                                    <td colspan="8" class="no-data">No messages processed.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                </div>
+                    <!-- Pagination Footer -->
+                    <div class="pagination-footer">
+                        <div id="pagination-info" class="pagination-info">Showing 0-0 of 0 messages</div>
+                        <div class="pagination-controls">
+                            <button id="prev-page-btn" class="pagination-btn" disabled>&larr; Prev</button>
+                            <span id="page-num-display" class="pagination-current">Page 1 of 1</span>
+                            <button id="next-page-btn" class="pagination-btn" disabled>Next &rarr;</button>
+                            <select id="page-size-select" class="page-size-select" style="margin-left: 0.5rem;">
+                                <option value="10">10 / page</option>
+                                <option value="25" selected>25 / page</option>
+                                <option value="50">50 / page</option>
+                                <option value="100">100 / page</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -998,18 +1068,21 @@
             <div class="form-group">
                 <label for="global-rate">Send Rate (msg/min)</label>
                 <div style="display:flex; gap:0.5rem; align-items:center;">
-                    <input type="number" id="global-rate" class="form-input" style="width: 80px; text-align: center; padding: 0.45rem;" value="10" min="1">
+                    <input type="number" id="global-rate" class="form-input"
+                        style="width: 80px; text-align: center; padding: 0.45rem;" value="10" min="1">
                     <button id="save-rate-btn" class="btn">Save</button>
                 </div>
             </div>
-            
+
             <div class="form-group" style="margin-top: 0.5rem;">
                 <label>WebSocket URL</label>
                 <div style="display:flex; gap:0.5rem; align-items:center;">
-                    <div style="flex:1; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border); border-radius: 4px; padding: 0.45rem 0.6rem; overflow-x: auto; white-space: nowrap; font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--text); line-height: 1.2;">
+                    <div
+                        style="flex:1; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border); border-radius: 4px; padding: 0.45rem 0.6rem; overflow-x: auto; white-space: nowrap; font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--text); line-height: 1.2;">
                         <span id="ws-url-display"></span>
                     </div>
-                    <button id="copy-ws-btn" class="btn btn-secondary" style="padding: 0.45rem 0.6rem;" title="Copy to clipboard">Copy</button>
+                    <button id="copy-ws-btn" class="btn btn-secondary" style="padding: 0.45rem 0.6rem;"
+                        title="Copy to clipboard">Copy</button>
                 </div>
             </div>
         </div>
@@ -1047,7 +1120,7 @@
         const lblSim2 = document.getElementById('lbl-sim-2');
         const simRadio2 = document.getElementById('sim-slot-2');
         const sendSingleBtn = document.getElementById('send-single-btn');
-        
+
         // HTML escaper to prevent XSS
         function esc(str) {
             const div = document.createElement('div');
@@ -1063,7 +1136,7 @@
             let current = '';
             for (let i = 0; i < text.length; i++) {
                 const c = text[i];
-                const next = text[i+1];
+                const next = text[i + 1];
                 if (c === '"') {
                     if (inQuotes && next === '"') {
                         current += '"';
@@ -1126,7 +1199,7 @@
         function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
-            
+
             btn.classList.add('active');
             document.getElementById(tabId).classList.add('active');
         }
@@ -1164,7 +1237,7 @@
                         updatePaginationUI();
                     } else if (data.type === 'message_new') {
                         totalMessagesCount++;
-                        
+
                         const query = searchQuery.trim().toLowerCase();
                         const matchesSearch = !query || (
                             (data.message.type && data.message.type.toLowerCase().includes(query)) ||
@@ -1225,7 +1298,7 @@
             div.className = `console-line ${isErr ? 'err' : ''}`;
             div.innerText = lineText;
             logBox.appendChild(div);
-            
+
             // Limit lines
             if (logBox.children.length > 200) {
                 logBox.removeChild(logBox.firstChild);
@@ -1238,7 +1311,7 @@
             const query = phoneSearchQuery.trim().toLowerCase();
             const filteredPhones = phones.filter(p => {
                 if (!query) return true;
-                
+
                 const deviceModel = (p.deviceModel || '').toLowerCase();
                 const deviceId = (p.deviceId || '').toLowerCase();
                 const sim1Carrier = (p.sim1Carrier || '').toLowerCase();
@@ -1250,14 +1323,14 @@
                 const status = p.online ? 'online' : 'offline';
 
                 return deviceModel.includes(query) ||
-                       deviceId.includes(query) ||
-                       sim1Carrier.includes(query) ||
-                       sim1Number.includes(query) ||
-                       sim2Carrier.includes(query) ||
-                       sim2Number.includes(query) ||
-                       battery.includes(query) ||
-                       lastSeen.includes(query) ||
-                       status.includes(query);
+                    deviceId.includes(query) ||
+                    sim1Carrier.includes(query) ||
+                    sim1Number.includes(query) ||
+                    sim2Carrier.includes(query) ||
+                    sim2Number.includes(query) ||
+                    battery.includes(query) ||
+                    lastSeen.includes(query) ||
+                    status.includes(query);
             });
 
             const onlineCount = phones.filter(p => p.online).length;
@@ -1276,12 +1349,12 @@
                 devicesContainer.innerHTML = `<div class="no-data">${phoneSearchQuery ? 'No matching phones.' : 'No registered phones.'}</div>`;
             } else {
                 devicesContainer.innerHTML = filteredPhones.map(p => {
-                    const statusTextHtml = p.online 
+                    const statusTextHtml = p.online
                         ? `<span class="badge badge-delivered" style="font-size: 9px; padding: 1px 3px;">Online</span>`
                         : `<span class="badge badge-failed" style="font-size: 9px; padding: 1px 3px;">Offline</span>`;
-                    
+
                     const batteryText = p.battery !== undefined ? `<span style="color:var(--success)">🔋 ${p.battery}%</span>` : '';
-                    
+
                     return `
                         <div class="device-card ${p.online ? '' : 'offline'}">
                             <div class="device-card-header">
@@ -1311,10 +1384,10 @@
             // Update Single Send Select Menu
             const currentlySelected = deviceSelect.value;
             deviceSelect.innerHTML = '<option value=""></option>' +
-                phones.filter(p => p.online).map(p => 
+                phones.filter(p => p.online).map(p =>
                     `<option value="${p.deviceId}">${esc(p.deviceModel)}</option>`
                 ).join('');
-            
+
             if (phones.some(p => p.deviceId === currentlySelected && p.online)) {
                 deviceSelect.value = currentlySelected;
             }
@@ -1370,15 +1443,15 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ globalSendRate: rateVal })
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    appendLog(`Successfully saved send rate to ${data.settings.globalSendRate} msg/min`);
-                } else {
-                    appendLog(`Error updating send rate: ${data.error}`, true);
-                }
-            })
-            .catch(err => appendLog(`Network error updating settings: ${err.message}`, true));
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        appendLog(`Successfully saved send rate to ${data.settings.globalSendRate} msg/min`);
+                    } else {
+                        appendLog(`Error updating send rate: ${data.error}`, true);
+                    }
+                })
+                .catch(err => appendLog(`Network error updating settings: ${err.message}`, true));
         });
 
         // Single Send Submit
@@ -1397,20 +1470,20 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ to, message, sim, deviceId })
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) {
-                    appendLog(`Send Command Error: ${data.error}`, true);
-                } else {
-                    appendLog(`SMS Request queued. ID: ${data.id}`);
-                    document.getElementById('recipient-number').value = '';
-                    document.getElementById('message-content').value = '';
-                }
-            })
-            .catch(err => appendLog(`Network error sending SMS: ${err.message}`, true))
-            .finally(() => {
-                sendSingleBtn.disabled = false;
-            });
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        appendLog(`Send Command Error: ${data.error}`, true);
+                    } else {
+                        appendLog(`SMS Request queued. ID: ${data.id}`);
+                        document.getElementById('recipient-number').value = '';
+                        document.getElementById('message-content').value = '';
+                    }
+                })
+                .catch(err => appendLog(`Network error sending SMS: ${err.message}`, true))
+                .finally(() => {
+                    sendSingleBtn.disabled = false;
+                });
         });
 
         // Bulk Queue control & file loading
@@ -1431,25 +1504,25 @@
                 // Reset file input value so selecting the same file next time triggers change event
                 csvFileInput.value = '';
                 uploadCsvBtn.disabled = false;
-                
+
                 let allMessages = [];
                 for (const file of selectedCsvFiles) {
                     try {
                         const text = await file.text();
                         const rows = parseCSV(text);
                         if (rows.length === 0) continue;
-                        
+
                         let startIndex = 0;
                         const firstRow = rows[0];
                         const isHeader = firstRow.some(cell => {
                             const c = cell.toLowerCase();
                             return c.includes('sender') || c.includes('recipient') || c.includes('message') || c.includes('to') || c.includes('content') || c.includes('body');
                         });
-                        
+
                         if (isHeader) {
                             startIndex = 1;
                         }
-                        
+
                         for (let i = startIndex; i < rows.length; i++) {
                             const row = rows[i];
                             if (row.length < 3) continue;
@@ -1464,7 +1537,7 @@
                         console.error('Error parsing CSV for preview:', err);
                     }
                 }
-                
+
                 if (allMessages.length > 0) {
                     previewMessages = allMessages;
                     previewCurrentPage = 1;
@@ -1534,16 +1607,16 @@
             if (!confirm('Are you sure you want to clear the pending bulk queue?')) return;
             clearQueueBtn.disabled = true;
             fetch('/api/clear-queue', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    appendLog(`Bulk sending queue cleared successfully.`);
-                }
-            })
-            .catch(err => appendLog(`Network error clearing queue: ${err.message}`, true))
-            .finally(() => {
-                clearQueueBtn.disabled = false;
-            });
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        appendLog(`Bulk sending queue cleared successfully.`);
+                    }
+                })
+                .catch(err => appendLog(`Network error clearing queue: ${err.message}`, true))
+                .finally(() => {
+                    clearQueueBtn.disabled = false;
+                });
         });
 
         function updateQueueUI(length) {
@@ -1561,7 +1634,7 @@
         function updateBulkInfoUI(queueLength) {
             const rate = globalSettings.globalSendRate || 10;
             const delay = (60 / rate).toFixed(1);
-            
+
             const bulkRateDisplay = document.getElementById('bulk-rate-display');
             const bulkDelayDisplay = document.getElementById('bulk-delay-display');
             const bulkExpectedTimeContainer = document.getElementById('bulk-expected-time-container');
@@ -1575,7 +1648,7 @@
                 if (queueLength && queueLength > 0) {
                     bulkExpectedTimeContainer.style.display = 'block';
                     if (bulkQueuedCount) bulkQueuedCount.innerText = queueLength;
-                    
+
                     const totalSecs = Math.ceil(queueLength * (60 / rate));
                     const mins = Math.floor(totalSecs / 60);
                     const secs = totalSecs % 60;
@@ -1640,10 +1713,10 @@
                 durationText += `${mins}m `;
             }
             durationText += `${secs}s`;
-            
+
             const completionDate = new Date(Date.now() + totalSecs * 1000);
             const completionClockText = completionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            
+
             document.getElementById('preview-est-duration').innerText = durationText;
             document.getElementById('preview-est-completion').innerText = completionClockText;
             document.getElementById('csv-preview-estimation').style.display = 'flex';
@@ -1651,7 +1724,7 @@
             // Show pagination
             previewPagination.style.display = 'flex';
             previewInfo.innerText = `Showing ${startIndex + 1}-${endIndex} of ${previewMessages.length}`;
-            
+
             const totalPages = Math.ceil(previewMessages.length / previewPageSize) || 1;
             previewPageNum.innerText = `Page ${previewCurrentPage} of ${totalPages}`;
             previewPrevBtn.disabled = previewCurrentPage <= 1;
@@ -1693,7 +1766,7 @@
                     totalMessagesCount = data.total || 0;
                     currentPage = data.page || 1;
                     pageSize = data.limit || 25;
-                    
+
                     updateHistoryTableUI();
                     updatePaginationUI();
                 })
@@ -1742,12 +1815,12 @@
 
         function updatePaginationUI() {
             const totalPages = Math.ceil(totalMessagesCount / pageSize) || 1;
-            
+
             prevPageBtn.disabled = currentPage <= 1;
             nextPageBtn.disabled = currentPage >= totalPages;
-            
+
             pageNumDisplay.innerText = `Page ${currentPage} of ${totalPages}`;
-            
+
             if (totalMessagesCount === 0) {
                 paginationInfo.innerText = searchQuery ? 'No matching messages' : 'Showing 0 messages';
             } else {
@@ -1756,7 +1829,7 @@
                 const filterSuffix = searchQuery ? ' (filtered)' : '';
                 paginationInfo.innerText = `Showing ${start}-${end} of ${totalMessagesCount} messages${filterSuffix}`;
             }
-            
+
             pageSizeSelect.value = pageSize;
         }
 
@@ -1766,18 +1839,18 @@
             if (!confirm('Are you sure you want to permanently clear all transmission logs?')) return;
             clearLogsBtn.disabled = true;
             fetch('/api/clear-messages', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    appendLog(`Transmission logs cleared.`);
-                } else {
-                    appendLog(`Error clearing logs: ${data.error}`, true);
-                }
-            })
-            .catch(err => appendLog(`Network error clearing logs: ${err.message}`, true))
-            .finally(() => {
-                clearLogsBtn.disabled = false;
-            });
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        appendLog(`Transmission logs cleared.`);
+                    } else {
+                        appendLog(`Error clearing logs: ${data.error}`, true);
+                    }
+                })
+                .catch(err => appendLog(`Network error clearing logs: ${err.message}`, true))
+                .finally(() => {
+                    clearLogsBtn.disabled = false;
+                });
         });
 
         // Phone Search event listeners
@@ -1787,7 +1860,7 @@
         phoneSearchInput.addEventListener('input', () => {
             const val = phoneSearchInput.value;
             phoneSearchQuery = val;
-            
+
             if (val) {
                 phoneSearchClearBtn.style.display = 'block';
             } else {
@@ -1811,13 +1884,13 @@
         logSearchInput.addEventListener('input', () => {
             const val = logSearchInput.value;
             searchQuery = val;
-            
+
             if (val) {
                 searchClearBtn.style.display = 'block';
             } else {
                 searchClearBtn.style.display = 'none';
             }
-            
+
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
             }
@@ -1955,4 +2028,5 @@
         });
     </script>
 </body>
+
 </html>
