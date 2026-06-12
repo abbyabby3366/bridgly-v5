@@ -773,21 +773,43 @@ app.get('/api/messages', async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 25;
         const search = req.query.search || '';
+        const sender = req.query.sender || '';
+        const status = req.query.status || '';
         
         const filter = {};
+        const conditions = [];
+
         if (search) {
             const cleanSearch = search.trim();
             const searchRegex = new RegExp(cleanSearch, 'i');
-            filter.$or = [
-                { id: searchRegex },
-                { type: searchRegex },
-                { sender: searchRegex },
-                { to: searchRegex },
-                { message: searchRegex },
-                { status: searchRegex },
-                { deviceModel: searchRegex },
-                { error: searchRegex }
-            ];
+            conditions.push({
+                $or: [
+                    { id: searchRegex },
+                    { type: searchRegex },
+                    { sender: searchRegex },
+                    { to: searchRegex },
+                    { message: searchRegex },
+                    { status: searchRegex },
+                    { deviceModel: searchRegex },
+                    { error: searchRegex }
+                ]
+            });
+        }
+
+        if (sender) {
+            conditions.push({ sender: sender.trim() });
+        }
+
+        if (status) {
+            conditions.push({ status: status.trim() });
+        }
+
+        if (conditions.length > 0) {
+            if (conditions.length === 1) {
+                Object.assign(filter, conditions[0]);
+            } else {
+                filter.$and = conditions;
+            }
         }
         
         const skip = (page - 1) * limit;
