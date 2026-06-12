@@ -7,10 +7,20 @@ plugins {
 android {
     namespace = "com.example.bridglysms"
     compileSdk = 36
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("${rootProject.projectDir}/bridgly-release.jks")
+            storePassword = "bridgly123"
+            keyAlias = "bridgly"
+            keyPassword = "bridgly123"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.vernu.sms"
         minSdk = 28
-        targetSdk = 32
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
     }
@@ -18,6 +28,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
