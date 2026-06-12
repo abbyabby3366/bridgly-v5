@@ -687,7 +687,7 @@ async function startServer() {
     await connectMongo();
     await loadPersistence();
     
-    server.listen(PORT, 'localhost', () => {
+    server.listen(PORT, '0.0.0.0', () => {
         console.log(`Bridgly SMS server is running on http://localhost:${PORT}`);
     });
 }
