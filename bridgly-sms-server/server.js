@@ -306,7 +306,7 @@ function processBulkQueue() {
             message: task.message,
             sim: foundSimSlot,
             status: 'pending',
-            createdAt: task.createdAt,
+            createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
 
@@ -696,7 +696,7 @@ app.post('/api/clear-queue', async (req, res) => {
 
 // Single Send Endpoint
 app.post('/api/send', (req, res) => {
-    const { to, message, sim, deviceId } = req.body;
+    const { to, message, sim, deviceId, type } = req.body;
     if (!to || !message) {
         return res.status(400).json({ error: 'Missing "to" or "message" fields' });
     }
@@ -730,7 +730,7 @@ app.post('/api/send', (req, res) => {
 
     const record = {
         id: msgId,
-        type: 'single',
+        type: type || 'single',
         sender: simSlot === 2 ? targetPhone.info.sim2Number : targetPhone.info.sim1Number,
         to,
         message,

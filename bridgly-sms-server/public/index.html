@@ -466,8 +466,6 @@
         /* History Table UI */
         .table-wrap {
             overflow-x: auto;
-            max-height: 400px;
-            height: auto;
             border: 1px solid var(--border);
             border-radius: 4px;
         }
@@ -634,6 +632,12 @@
         .badge-bulk {
             background: rgba(245, 158, 11, 0.1);
             color: var(--warning);
+        }
+
+        .badge-resend,
+        .badge-RESEND {
+            background: rgba(236, 72, 153, 0.1);
+            color: #f472b6;
         }
 
         .no-data {
@@ -897,9 +901,7 @@
             }
 
             /* Table scroll */
-            .table-wrap {
-                max-height: 300px;
-            }
+            .table-wrap {}
 
             table {
                 font-size: 10px;
@@ -978,7 +980,7 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <h1>Bridgly SMS Gateway v5.0.2</h1>
+                <h1>Bridgly SMS Gateway v5.0.3</h1>
             </div>
             <div class="header-controls">
                 <div class="status-badge">
@@ -1168,7 +1170,8 @@
                         <div id="bulk-concurrent-info" style="display: none; margin-top: 0.15rem;">
                             <span style="color: var(--text); font-weight: 600;">Active Device Streams:</span>
                             <span id="bulk-active-devices" style="color: var(--accent); font-weight: 700;">0</span>
-                            &mdash; Effective throughput: <span id="bulk-effective-rate" style="color: var(--success); font-weight: 700;">0</span> msg/min
+                            &mdash; Effective throughput: <span id="bulk-effective-rate"
+                                style="color: var(--success); font-weight: 700;">0</span> msg/min
                         </div>
                         <div id="bulk-expected-time-container"
                             style="display: none; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.4rem; margin-top: 0.2rem;">
@@ -1182,9 +1185,12 @@
                                     id="bulk-completion-clock" style="color: var(--info); font-weight: 600;">-</span>
                             </div>
                         </div>
-                        <div id="bulk-device-breakdown" style="display: none; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.5rem; margin-top: 0.3rem;">
-                            <div style="color: var(--text); font-weight: 600; margin-bottom: 0.35rem;">Per-Device Queue Breakdown:</div>
-                            <div id="bulk-breakdown-list" style="display: flex; flex-direction: column; gap: 0.3rem;"></div>
+                        <div id="bulk-device-breakdown"
+                            style="display: none; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.5rem; margin-top: 0.3rem;">
+                            <div style="color: var(--text); font-weight: 600; margin-bottom: 0.35rem;">Per-Device Queue
+                                Breakdown:</div>
+                            <div id="bulk-breakdown-list" style="display: flex; flex-direction: column; gap: 0.3rem;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1209,10 +1215,9 @@
             <!-- Right History -->
             <div class="card" id="history-card">
                 <div class="card-header" id="history-header"
-                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; cursor: pointer; user-select: none;">
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                     <h2 class="card-title">
                         <span>Message Transmission Logs</span>
-                        <span class="toggle-icon">▼</span>
                     </h2>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <button id="clear-logs-btn" class="btn btn-danger"
@@ -1223,18 +1228,27 @@
                             <button id="search-clear" class="search-clear-btn" title="Clear search">&times;</button>
                         </div>
                     </div>
+                </div>
                 <div id="history-content" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%;">
                     <!-- Logs Filter Controls Row -->
-                    <div class="filter-controls-row" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; background: rgba(0, 0, 0, 0.15); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border);">
-                        <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.4rem; margin: 0;">
-                            <label for="filter-sender" style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin: 0; white-space: nowrap;">Sender Phone:</label>
-                            <select id="filter-sender" class="form-input" style="width: 170px; padding: 0.3rem 0.5rem; font-size: 11px; height: auto;">
+                    <div class="filter-controls-row"
+                        style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; background: rgba(0, 0, 0, 0.15); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border);">
+                        <div class="form-group"
+                            style="flex-direction: row; align-items: center; gap: 0.4rem; margin: 0;">
+                            <label for="filter-sender"
+                                style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin: 0; white-space: nowrap;">Sender
+                                Phone:</label>
+                            <select id="filter-sender" class="form-input"
+                                style="width: 170px; padding: 0.3rem 0.5rem; font-size: 11px; height: auto;">
                                 <option value="">All Senders</option>
                             </select>
                         </div>
-                        <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.4rem; margin: 0;">
-                            <label for="filter-status" style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin: 0; white-space: nowrap;">Status:</label>
-                            <select id="filter-status" class="form-input" style="width: 120px; padding: 0.3rem 0.5rem; font-size: 11px; height: auto;">
+                        <div class="form-group"
+                            style="flex-direction: row; align-items: center; gap: 0.4rem; margin: 0;">
+                            <label for="filter-status"
+                                style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin: 0; white-space: nowrap;">Status:</label>
+                            <select id="filter-status" class="form-input"
+                                style="width: 120px; padding: 0.3rem 0.5rem; font-size: 11px; height: auto;">
                                 <option value="">All Statuses</option>
                                 <option value="pending">Pending</option>
                                 <option value="sent">Sent</option>
@@ -1255,11 +1269,12 @@
                                     <th>Message</th>
                                     <th style="width: 110px;">Status</th>
                                     <th style="width: 140px;">Date / Time</th>
+                                    <th style="width: 70px; text-align: right;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="history-body">
                                 <tr>
-                                    <td colspan="8" class="no-data">No messages processed.</td>
+                                    <td colspan="9" class="no-data">No messages processed.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1481,7 +1496,10 @@
                             (data.message.deviceModel && data.message.deviceModel.toLowerCase().includes(query))
                         );
 
-                        if (currentPage === 1 && matchesSearch) {
+                        const matchesSender = !filterSender || (data.message.sender && data.message.sender.trim() === filterSender.trim());
+                        const matchesStatus = !filterStatus || (data.message.status && data.message.status.trim() === filterStatus.trim());
+
+                        if (currentPage === 1 && matchesSearch && matchesSender && matchesStatus) {
                             displayedMessages.unshift(data.message);
                             if (displayedMessages.length > pageSize) {
                                 displayedMessages.pop();
@@ -2089,7 +2107,8 @@
 
         function updateHistoryTableUI() {
             if (displayedMessages.length === 0) {
-                historyBody.innerHTML = `<tr><td colspan="8" class="no-data">${searchQuery ? 'No matching messages found.' : 'No messages processed.'}</td></tr>`;
+                const hasFilters = searchQuery || filterSender || filterStatus;
+                historyBody.innerHTML = `<tr><td colspan="9" class="no-data">${hasFilters ? 'No matching messages found.' : 'No messages processed.'}</td></tr>`;
                 return;
             }
 
@@ -2099,6 +2118,9 @@
                 const typeBadgeClass = `badge badge-${m.type || 'single'}`;
                 const phoneText = m.deviceModel || '-';
                 const errText = m.error ? `<div style="font-size: 9px; color: var(--danger);">${esc(m.error)}</div>` : '';
+                const retryBtn = m.status === 'failed'
+                    ? `<button class="btn btn-secondary" style="padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1;" onclick="retryMessage('${esc(m.id)}')" title="Resend this message">Retry</button>`
+                    : '';
                 return `
                     <tr>
                         <td style="color: var(--text-muted); font-weight: 500;">${esc(phoneText)}</td>
@@ -2112,6 +2134,7 @@
                             ${errText}
                         </td>
                         <td style="color: var(--text-muted);">${timeStr}</td>
+                        <td style="text-align: right;">${retryBtn}</td>
                     </tr>
                 `;
             }).join('');
@@ -2259,24 +2282,24 @@
         function updateSenderFilterDropdown() {
             if (!filterSenderSelect) return;
             const currentlySelected = filterSenderSelect.value;
-            
+
             const numbers = new Set();
             phones.forEach(p => {
                 if (p.sim1Number) numbers.add(p.sim1Number.trim());
                 if (p.isDualSim && p.sim2Number) numbers.add(p.sim2Number.trim());
             });
-            
+
             const sortedNumbers = Array.from(numbers).sort();
-            
+
             let optionsHtml = '<option value="">All Senders</option>';
             sortedNumbers.forEach(num => {
                 const dev = phones.find(p => p.sim1Number === num || (p.isDualSim && p.sim2Number === num));
                 const label = dev ? `${num} (${dev.deviceModel})` : num;
                 optionsHtml += `<option value="${esc(num)}">${esc(label)}</option>`;
             });
-            
+
             filterSenderSelect.innerHTML = optionsHtml;
-            
+
             if (sortedNumbers.includes(currentlySelected)) {
                 filterSenderSelect.value = currentlySelected;
             } else if (currentlySelected) {
@@ -2289,6 +2312,38 @@
                 filterSenderSelect.value = '';
                 filterSender = '';
             }
+        }
+
+        // Retry a failed message immediately using type: 'RESEND'
+        function retryMessage(msgId) {
+            const msg = displayedMessages.find(m => m.id === msgId);
+            if (!msg) {
+                appendLog('Failed to retry: message details not found in active list.', true);
+                return;
+            }
+
+            appendLog(`Retrying message to ${msg.to} (original ID: ${msgId})...`);
+
+            fetch('/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: msg.to,
+                    message: msg.message,
+                    sim: msg.sim,
+                    deviceId: msg.deviceId,
+                    type: 'RESEND'
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        appendLog(`Retry Send Error: ${data.error}`, true);
+                    } else {
+                        appendLog(`Retry SMS Request queued. ID: ${data.id}`);
+                    }
+                })
+                .catch(err => appendLog(`Network error retrying SMS: ${err.message}`, true));
         }
 
         // Collapsible sections initialization
@@ -2307,23 +2362,10 @@
                 consoleLogs.classList.add('collapsed-content');
             }
 
-            const historyCollapsed = localStorage.getItem('history_collapsed') === 'true';
-            if (historyCollapsed) {
-                historyCard.classList.add('collapsed');
-                historyContent.classList.add('collapsed-content');
-            }
-
             consoleHeader.addEventListener('click', () => {
                 const isCollapsed = consoleCard.classList.toggle('collapsed');
                 consoleLogs.classList.toggle('collapsed-content', isCollapsed);
                 localStorage.setItem('console_collapsed', isCollapsed);
-            });
-
-            historyHeader.addEventListener('click', (e) => {
-                if (e.target.closest('.search-wrap') || e.target.closest('input') || e.target.closest('button')) return;
-                const isCollapsed = historyCard.classList.toggle('collapsed');
-                historyContent.classList.toggle('collapsed-content', isCollapsed);
-                localStorage.setItem('history_collapsed', isCollapsed);
             });
         }
 
