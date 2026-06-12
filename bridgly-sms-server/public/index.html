@@ -849,7 +849,7 @@
             }
 
             /* Single form grid stacks */
-            #single-tab form > div:first-child {
+            #single-tab form>div:first-child {
                 grid-template-columns: 1fr !important;
             }
 
@@ -905,7 +905,8 @@
                 font-size: 10px;
             }
 
-            th, td {
+            th,
+            td {
                 padding: 0.35rem 0.3rem;
             }
 
@@ -916,7 +917,7 @@
                 gap: 0.4rem !important;
             }
 
-            #history-header > div:last-child {
+            #history-header>div:last-child {
                 width: 100%;
                 flex-wrap: wrap;
             }
@@ -977,7 +978,7 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <h1>Bridgly SMS Gateway v5.0.1</h1>
+                <h1>Bridgly SMS Gateway v5.0.2</h1>
             </div>
             <div class="header-controls">
                 <div class="status-badge">
@@ -1159,10 +1160,15 @@
                         <div>
                             <span style="color: var(--text); font-weight: 600;">Sending Rate:</span>
                             <span id="bulk-rate-display" style="color: var(--info); font-weight: 600;">10</span>
-                            messages/min
+                            messages/min <strong>per device</strong>
                             (approximately <span id="bulk-delay-display"
                                 style="color: var(--success); font-weight: 600;">6.0</span> seconds delay between each
-                            message)
+                            message per device)
+                        </div>
+                        <div id="bulk-concurrent-info" style="display: none; margin-top: 0.15rem;">
+                            <span style="color: var(--text); font-weight: 600;">Active Device Streams:</span>
+                            <span id="bulk-active-devices" style="color: var(--accent); font-weight: 700;">0</span>
+                            &mdash; Effective throughput: <span id="bulk-effective-rate" style="color: var(--success); font-weight: 700;">0</span> msg/min
                         </div>
                         <div id="bulk-expected-time-container"
                             style="display: none; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.4rem; margin-top: 0.2rem;">
@@ -1175,6 +1181,10 @@
                             <div><span style="color: var(--text); font-weight: 600;">Est. Completion Time:</span> <span
                                     id="bulk-completion-clock" style="color: var(--info); font-weight: 600;">-</span>
                             </div>
+                        </div>
+                        <div id="bulk-device-breakdown" style="display: none; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.5rem; margin-top: 0.3rem;">
+                            <div style="color: var(--text); font-weight: 600; margin-bottom: 0.35rem;">Per-Device Queue Breakdown:</div>
+                            <div id="bulk-breakdown-list" style="display: flex; flex-direction: column; gap: 0.3rem;"></div>
                         </div>
                     </div>
                 </div>
@@ -1292,6 +1302,8 @@
         let phones = [];
         let globalSettings = { globalSendRate: 10 };
         let currentQueueLength = 0;
+        let activeDeviceQueues = 0;
+        let queueBreakdown = [];
         let phoneSearchQuery = '';
 
         // State for backend-driven pagination and search
@@ -1420,6 +1432,8 @@
                     if (data.type === 'init') {
                         phones = data.phones || [];
                         globalSettings = data.settings || { globalSendRate: 10 };
+                        activeDeviceQueues = data.activeDeviceQueues || 0;
+                        queueBreakdown = data.queueBreakdown || [];
                         rateInput.value = globalSettings.globalSendRate;
                         updatePhonesUI();
                         updateQueueUI(data.queueLength);
@@ -1464,6 +1478,8 @@
                     } else if (data.type === 'log') {
                         appendLog(data.log);
                     } else if (data.type === 'queue_status') {
+                        activeDeviceQueues = data.activeDeviceQueues || 0;
+                        queueBreakdown = data.queueBreakdown || [];
                         updateQueueUI(data.queueLength);
                         if (data.rate) {
                             rateInput.value = data.rate;
@@ -1849,7 +1865,7 @@
             currentQueueLength = length;
             if (length > 0) {
                 queueWidget.style.display = 'flex';
-                queueDesc.innerText = `Remaining: ${length} messages (${Math.ceil(length / parseInt(rateInput.value))} min left)`;
+                queueDesc.innerText = `Remaining: ${length} messages across ${activeDeviceQueues || 1} device(s) (~${Math.ceil(length / (parseInt(rateInput.value) * (activeDeviceQueues || 1)))} min left)`;
             } else {
                 queueWidget.style.display = 'none';
             }
@@ -1860,22 +1876,41 @@
         function updateBulkInfoUI(queueLength) {
             const rate = globalSettings.globalSendRate || 10;
             const delay = (60 / rate).toFixed(1);
+            const devices = activeDeviceQueues || 1;
+            const effectiveRate = rate * devices;
 
             const bulkRateDisplay = document.getElementById('bulk-rate-display');
             const bulkDelayDisplay = document.getElementById('bulk-delay-display');
             const bulkExpectedTimeContainer = document.getElementById('bulk-expected-time-container');
             const bulkQueuedCount = document.getElementById('bulk-queued-count');
             const bulkCompletionTime = document.getElementById('bulk-completion-time');
+            const bulkConcurrentInfo = document.getElementById('bulk-concurrent-info');
+            const bulkActiveDevices = document.getElementById('bulk-active-devices');
+            const bulkEffectiveRate = document.getElementById('bulk-effective-rate');
+            const bulkDeviceBreakdown = document.getElementById('bulk-device-breakdown');
+            const bulkBreakdownList = document.getElementById('bulk-breakdown-list');
 
             if (bulkRateDisplay) bulkRateDisplay.innerText = rate;
             if (bulkDelayDisplay) bulkDelayDisplay.innerText = delay;
+
+            // Show concurrent device info when queues are active
+            if (bulkConcurrentInfo) {
+                if (activeDeviceQueues > 0) {
+                    bulkConcurrentInfo.style.display = 'block';
+                    if (bulkActiveDevices) bulkActiveDevices.innerText = devices;
+                    if (bulkEffectiveRate) bulkEffectiveRate.innerText = effectiveRate;
+                } else {
+                    bulkConcurrentInfo.style.display = 'none';
+                }
+            }
 
             if (bulkExpectedTimeContainer) {
                 if (queueLength && queueLength > 0) {
                     bulkExpectedTimeContainer.style.display = 'block';
                     if (bulkQueuedCount) bulkQueuedCount.innerText = queueLength;
 
-                    const totalSecs = Math.ceil(queueLength * (60 / rate));
+                    // ETA accounts for concurrent sending: total / effectiveRate
+                    const totalSecs = Math.ceil(queueLength * (60 / effectiveRate));
                     const mins = Math.floor(totalSecs / 60);
                     const secs = totalSecs % 60;
                     let durationText = '';
@@ -1891,6 +1926,34 @@
                     if (bulkCompletionClock) bulkCompletionClock.innerText = completionClockText;
                 } else {
                     bulkExpectedTimeContainer.style.display = 'none';
+                }
+            }
+
+            // Render per-device breakdown
+            if (bulkDeviceBreakdown && bulkBreakdownList) {
+                if (queueBreakdown.length > 0) {
+                    bulkDeviceBreakdown.style.display = 'block';
+                    bulkBreakdownList.innerHTML = queueBreakdown.map(q => {
+                        const qSecs = Math.ceil(q.remaining * (60 / rate));
+                        const qMins = Math.floor(qSecs / 60);
+                        const qS = qSecs % 60;
+                        let qDuration = '';
+                        if (qMins > 0) qDuration += `${qMins}m `;
+                        qDuration += `${qS}s`;
+                        return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0.5rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: var(--accent); font-weight: 600;">📱</span>
+                                <span style="color: var(--text); font-weight: 600;">${esc(q.sender)}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 10px;">
+                                <span style="color: var(--warning);">${q.remaining} msg left</span>
+                                <span style="color: var(--text-muted);">~${qDuration}</span>
+                            </div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    bulkDeviceBreakdown.style.display = 'none';
+                    bulkBreakdownList.innerHTML = '';
                 }
             }
         }

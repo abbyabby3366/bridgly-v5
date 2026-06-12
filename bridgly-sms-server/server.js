@@ -184,26 +184,63 @@ function broadcastToWeb(data) {
     }
 }
 
+function getQueueBreakdown() {
+    const breakdown = [];
+    for (const [senderKey, queue] of deviceQueues.entries()) {
+        if (queue.messages.length > 0) {
+            // Use the original sender from the first message for display
+            const displaySender = queue.messages[0].sender || senderKey;
+            breakdown.push({
+                sender: displaySender,
+                remaining: queue.messages.length
+            });
+        }
+    }
+    return breakdown;
+}
+
 function broadcastQueueStatus() {
     broadcastToWeb({
         type: 'queue_status',
-        queueLength: bulkQueue.length,
-        rate: settings.globalSendRate
+        queueLength: getQueueLength(),
+        rate: settings.globalSendRate,
+        activeDeviceQueues: deviceQueues.size,
+        queueBreakdown: getQueueBreakdown()
     });
 }
 
-// Bulk SMS Send Queue
-let bulkQueue = [];
-let lastSentTime = 0;
+// Per-sender concurrent bulk SMS queues
+// Key: normalized sender phone number, Value: { messages: [], lastSentTime: 0 }
+const deviceQueues = new Map();
+
+function getQueueLength() {
+    let total = 0;
+    for (const q of deviceQueues.values()) {
+        total += q.messages.length;
+    }
+    return total;
+}
 
 function processBulkQueue() {
-    if (bulkQueue.length === 0) return;
+    if (deviceQueues.size === 0) return;
 
     const now = Date.now();
     const minInterval = 60000 / (settings.globalSendRate || 10);
-    if (now - lastSentTime >= minInterval) {
-        lastSentTime = now;
-        const task = bulkQueue.shift();
+    let sentAny = false;
+
+    // Process each sender queue concurrently — one message per device per tick
+    for (const [senderKey, queue] of deviceQueues.entries()) {
+        if (queue.messages.length === 0) {
+            deviceQueues.delete(senderKey);
+            continue;
+        }
+
+        // Each device queue has its own rate limiter
+        if (now - queue.lastSentTime < minInterval) continue;
+
+        queue.lastSentTime = now;
+        sentAny = true;
+        const task = queue.messages.shift();
 
         // Route using dynamic phone number sent by connected devices
         let foundDevice = null;
@@ -244,9 +281,9 @@ function processBulkQueue() {
             if (messageHistory.length > 500) messageHistory.shift();
             addLog(`Bulk SMS failed: No mapping found for sender ${task.sender}`);
             broadcastToWeb({ type: 'message_new', message: record });
-            broadcastQueueStatus();
             saveMessage(record);
-            return;
+            if (queue.messages.length === 0) deviceQueues.delete(senderKey);
+            continue;
         }
 
         const phone = connectedPhones.get(foundDevice);
@@ -258,9 +295,9 @@ function processBulkQueue() {
             if (messageHistory.length > 500) messageHistory.shift();
             addLog(`Bulk SMS failed: Device ${foundDevice} (mapped to ${task.sender}) is offline`);
             broadcastToWeb({ type: 'message_new', message: record });
-            broadcastQueueStatus();
             saveMessage(record);
-            return;
+            if (queue.messages.length === 0) deviceQueues.delete(senderKey);
+            continue;
         }
 
         // Complete record details
@@ -288,8 +325,14 @@ function processBulkQueue() {
         }
 
         broadcastToWeb({ type: 'message_new', message: record });
-        broadcastQueueStatus();
         saveMessage(record);
+
+        // Clean up empty queue entry
+        if (queue.messages.length === 0) deviceQueues.delete(senderKey);
+    }
+
+    if (sentAny) {
+        broadcastQueueStatus();
     }
 }
 
@@ -373,7 +416,9 @@ wss.on('connection', (ws, req) => {
                     type: 'init',
                     phones: getPhonesList(),
                     history: messageHistory,
-                    queueLength: bulkQueue.length,
+                    queueLength: getQueueLength(),
+                    activeDeviceQueues: deviceQueues.size,
+                    queueBreakdown: getQueueBreakdown(),
                     settings: settings
                 }));
             }
@@ -550,7 +595,11 @@ app.post('/api/upload-csv', (req, res) => {
             const message = row[2].trim();
 
             if (sender && recipient && message) {
-                bulkQueue.push({
+                const senderKey = normalizePhoneNumber(sender);
+                if (!deviceQueues.has(senderKey)) {
+                    deviceQueues.set(senderKey, { messages: [], lastSentTime: 0 });
+                }
+                deviceQueues.get(senderKey).messages.push({
                     sender,
                     recipient,
                     message,
@@ -571,8 +620,8 @@ app.post('/api/upload-csv', (req, res) => {
 
 // Clear Bulk Queue
 app.post('/api/clear-queue', (req, res) => {
-    const originalCount = bulkQueue.length;
-    bulkQueue = [];
+    const originalCount = getQueueLength();
+    deviceQueues.clear();
     addLog(`Bulk SMS Queue cleared. ${originalCount} messages removed.`);
     broadcastQueueStatus();
     res.json({ success: true, count: originalCount });
@@ -699,7 +748,9 @@ app.get('/api/status', (req, res) => {
         phones: getPhonesList(),
         messages: messageHistory,
         logs: logs.slice(-50),
-        queueLength: bulkQueue.length,
+        queueLength: getQueueLength(),
+        activeDeviceQueues: deviceQueues.size,
+        queueBreakdown: getQueueBreakdown(),
         settings: settings
     });
 });
