@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bridgly SMS Gateway Control Panel</title>
+    <meta name="description" content="Control panel to send SMS programmatically through Android phones in real time.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: radial-gradient(circle at top, #1e1b4b, #09090b);
+            --card-bg: rgba(24, 24, 27, 0.65);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.3);
+            --warning: #f59e0b;
+            --warning-glow: rgba(245, 158, 11, 0.3);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.3);
+            --info: #0ea5e9;
+            --info-glow: rgba(14, 165, 233, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header block */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .logo-section h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a5b4fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo-section p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            border: 1px solid var(--card-border);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--danger);
+            box-shadow: 0 0 8px var(--danger-glow);
+            transition: all 0.4s ease;
+        }
+
+        .status-dot.online {
+            background-color: var(--success);
+            box-shadow: 0 0 10px var(--success-glow);
+            animation: pulse 2s infinite;
+        }
+
+        .status-text {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.2f 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cards Design */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #fff;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 0.85rem 1rem;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        textarea.form-input {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Segmented Radio SIM Selector */
+        .sim-selector {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            gap: 0.25rem;
+        }
+
+        .sim-option {
+            flex: 1;
+            position: relative;
+        }
+
+        .sim-option input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .sim-label {
+            display: block;
+            text-align: center;
+            padding: 0.6rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .sim-option input:checked + .sim-label {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 2px 8px var(--accent-glow);
+        }
+
+        .sim-option input:disabled + .sim-label {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: linear-gradient(135deg, #818cf8, #4f46e5);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.9rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px var(--accent-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn:disabled {
+            background: #27272a;
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Console Log View */
+        .log-console {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 1rem;
+            height: 310px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: #a7f3d0;
+        }
+
+        .log-item {
+            margin-bottom: 0.4rem;
+            white-space: pre-wrap;
+        }
+
+        .log-item.error {
+            color: #fca5a5;
+        }
+
+        /* Table & History View */
+        .history-card {
+            margin-top: 1.5rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 1px solid var(--card-border);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .badge-pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .badge-sent {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--info);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+        }
+
+        .badge-delivered {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-failed {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .badge-sim {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        /* Utility class */
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .muted {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 2.5rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo-section">
+                <h1>Bridgly SMS</h1>
+                <p>Dual-SIM Local SMS Gateway Control Center</p>
+            </div>
+            <div class="status-badge">
+                <div id="phone-dot" class="status-dot"></div>
+                <span id="phone-text" class="status-text">Phone Offline</span>
+            </div>
+        </header>
+
+        <!-- Grid Layout -->
+        <div class="dashboard-grid">
+            <!-- Left Side: Control -->
+            <div class="card">
+                <h2 class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    Send Message
+                </h2>
+                <form id="sms-form">
+                    <div class="form-group">
+                        <label for="to">Recipient Number</label>
+                        <input type="text" id="to" class="form-input" placeholder="+1234567890" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Message Body</label>
+                        <textarea id="message" class="form-input" placeholder="Type your text message here..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Select SIM Card</label>
+                        <div class="sim-selector">
+                            <div class="sim-option">
+                                <input type="radio" id="sim1" name="sim" value="1" checked>
+                                <label for="sim1" class="sim-label">SIM 1</label>
+                            </div>
+                            <div class="sim-option">
+                                <input type="radio" id="sim2" name="sim" value="2">
+                                <label for="sim2" class="sim-label" id="sim2-label">SIM 2 (Unavailable)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="send-btn" class="btn" disabled>Send SMS</button>
+                </form>
+            </div>
+
+            <!-- Right Side: Live Logs -->
+            <div class="card">
+                <div class="card-title flex-between">
+                    <span style="display:flex; align-items:center; gap:0.5rem;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        Gateway Logs
+                    </span>
+                    <span class="muted" id="sim-status-desc">Single SIM mode</span>
+                </div>
+                <div class="log-console" id="log-console">
+                    <div class="log-item">Console initialized. Connecting socket...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="card history-card">
+            <h2 class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Message Transmission History
+            </h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Message ID</th>
+                            <th>Recipient</th>
+                            <th>SIM</th>
+                            <th>Content</th>
+                            <th>Status</th>
+                            <th>Sent Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <tr>
+                            <td colspan="6" class="no-data">No messages processed yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client WebSockets Script -->
+    <script>
+        const form = document.getElementById('sms-form');
+        const sendBtn = document.getElementById('send-btn');
+        const phoneDot = document.getElementById('phone-dot');
+        const phoneText = document.getElementById('phone-text');
+        const logConsole = document.getElementById('log-console');
+        const simStatusDesc = document.getElementById('sim-status-desc');
+        const sim2Radio = document.getElementById('sim2');
+        const sim2Label = document.getElementById('sim2-label');
+        const historyBody = document.getElementById('history-table-body');
+
+        let messageHistory = [];
+        let socket;
+
+        function connectWS() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                socket.send(JSON.stringify({ action: 'dashboard_connect' }));
+                addLog('Connected to Bridgly server WebSocket.');
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'init') {
+                        messageHistory = data.history;
+                        updatePhoneStatus(data.phone);
+                        renderHistory();
+                    } else if (data.type === 'phone_status') {
+                        updatePhoneStatus(data.details);
+                    } else if (data.type === 'message_new') {
+                        messageHistory.push(data.message);
+                        renderHistory();
+                    } else if (data.type === 'message_update') {
+                        const idx = messageHistory.findIndex(m => m.id === data.message.id);
+                        if (idx !== -1) {
+                            messageHistory[idx] = data.message;
+                        } else {
+                            messageHistory.push(data.message);
+                        }
+                        renderHistory();
+                    } else if (data.type === 'log') {
+                        addLog(data.log, false);
+                    }
+                } catch (e) {
+                    console.error('Error handling WebSocket message:', e);
+                }
+            };
+
+            socket.onclose = () => {
+                addLog('WebSocket connection to server closed. Retrying in 5 seconds...', true);
+                updatePhoneStatus({ online: false, isDualSim: false });
+                setTimeout(connectWS, 5000);
+            };
+        }
+
+        function updatePhoneStatus(phone) {
+            if (phone.online) {
+                phoneDot.className = 'status-dot online';
+                phoneText.innerText = 'Phone Online';
+                sendBtn.disabled = false;
+                addLog('Phone is online and ready.');
+                
+                if (phone.isDualSim) {
+                    simStatusDesc.innerText = 'Dual SIM mode enabled';
+                    sim2Radio.disabled = false;
+                    sim2Label.innerText = 'SIM 2';
+                } else {
+                    simStatusDesc.innerText = 'Single SIM mode active';
+                    sim2Radio.disabled = true;
+                    sim2Radio.checked = false;
+                    sim2Label.innerText = 'SIM 2 (Unavailable)';
+                }
+            } else {
+                phoneDot.className = 'status-dot';
+                phoneText.innerText = 'Phone Offline';
+                sendBtn.disabled = true;
+                simStatusDesc.innerText = 'Offline';
+                sim2Radio.disabled = true;
+                sim2Radio.checked = false;
+                sim2Label.innerText = 'SIM 2 (Unavailable)';
+                addLog('Phone went offline. Cannot send messages.', true);
+            }
+        }
+
+        function addLog(text, isError = false) {
+            const div = document.createElement('div');
+            div.className = `log-item ${isError ? 'error' : ''}`;
+            div.innerText = text;
+            logConsole.appendChild(div);
+            logConsole.scrollTop = logConsole.scrollHeight;
+        }
+
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'pending': return 'badge-pending';
+                case 'sent': return 'badge-sent';
+                case 'delivered': return 'badge-delivered';
+                case 'failed': return 'badge-failed';
+                default: return '';
+            }
+        }
+
+        function renderHistory() {
+            if (messageHistory.length === 0) {
+                historyBody.innerHTML = `<tr><td colspan="6" class="no-data">No messages processed yet.</td></tr>`;
+                return;
+            }
+
+            const sorted = [...messageHistory].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            historyBody.innerHTML = sorted.map(msg => {
+                const date = new Date(msg.createdAt).toLocaleTimeString();
+                const errorText = msg.error ? ` <span style="display:block; font-size:10px; color:var(--danger)">${msg.error}</span>` : '';
+                return `
+                    <tr>
+                        <td style="font-family:'JetBrains Mono', monospace; font-size:0.75rem; color:var(--text-secondary)">${msg.id.substring(0,8)}...</td>
+                        <td><strong>${msg.to}</strong></td>
+                        <td><span class="badge-sim">SIM ${msg.sim}</span></td>
+                        <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msg.message}</td>
+                        <td>
+                            <span class="badge ${getStatusBadgeClass(msg.status)}">${msg.status}</span>
+                            ${errorText}
+                        </td>
+                        <td class="muted">${date}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const to = document.getElementById('to').value.trim();
+            const message = document.getElementById('message').value.trim();
+            const sim = document.querySelector('input[name="sim"]:checked').value;
+
+            sendBtn.disabled = true;
+            addLog(`Requesting send to ${to} via SIM ${sim}...`);
+
+            fetch('/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to, message, sim })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    addLog(`Server Error: ${data.error}`, true);
+                } else {
+                    addLog(`Message queued. ID: ${data.id}`);
+                    document.getElementById('to').value = '';
+                    document.getElementById('message').value = '';
+                }
+            })
+            .catch(err => {
+                addLog(`Network Error: ${err.message}`, true);
+            })
+            .finally(() => {
+                sendBtn.disabled = false;
+            });
+        });
+
+        connectWS();
+    </script>
+</body>
+</html>
