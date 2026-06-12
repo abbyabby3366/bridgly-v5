@@ -603,6 +603,8 @@
         .badge-sent { background: rgba(14, 165, 233, 0.1); color: var(--info); }
         .badge-delivered { background: rgba(16, 185, 129, 0.1); color: var(--success); }
         .badge-failed { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .badge-single { background: rgba(79, 70, 229, 0.1); color: #818cf8; }
+        .badge-bulk { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
 
         .no-data {
             text-align: center;
@@ -920,9 +922,12 @@
                         <span>Message Transmission Logs</span>
                         <span class="toggle-icon">▼</span>
                     </h2>
-                    <div class="search-wrap">
-                        <input type="text" id="log-search" class="form-input" placeholder="Search logs..." style="width: 220px; font-size: 11px; padding: 0.3rem 0.5rem; padding-right: 24px;">
-                        <button id="search-clear" class="search-clear-btn" title="Clear search">&times;</button>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <button id="clear-logs-btn" class="btn btn-danger" style="padding: 0.3rem 0.5rem; font-size: 11px;">Clear Logs</button>
+                        <div class="search-wrap">
+                            <input type="text" id="log-search" class="form-input" placeholder="Search logs..." style="width: 220px; font-size: 11px; padding: 0.3rem 0.5rem; padding-right: 24px;">
+                            <button id="search-clear" class="search-clear-btn" title="Clear search">&times;</button>
+                        </div>
                     </div>
                 </div>
                 <div id="history-content" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%;">
@@ -930,17 +935,19 @@
                     <table>
                         <thead>
                             <tr>
-                                <th style="width: 90px;">Msg ID</th>
+                                <th style="width: 130px;">Phone</th>
+                                <th style="width: 70px;">Type</th>
+                                <th style="width: 100px;">Sender</th>
                                 <th style="width: 100px;">Recipient</th>
                                 <th style="width: 50px;">SIM</th>
                                 <th>Message</th>
                                 <th style="width: 110px;">Status</th>
-                                <th style="width: 75px;">Time</th>
+                                <th style="width: 140px;">Date / Time</th>
                             </tr>
                         </thead>
                         <tbody id="history-body">
                             <tr>
-                                <td colspan="6" class="no-data">No messages processed.</td>
+                                <td colspan="8" class="no-data">No messages processed.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1010,6 +1017,7 @@
         let previewMessages = [];
         let previewCurrentPage = 1;
         const previewPageSize = 10;
+        let selectedCsvFiles = [];
 
         // DOM elements
         const statusDot = document.getElementById('status-dot');
@@ -1131,11 +1139,19 @@
                     } else if (data.type === 'phones_list') {
                         phones = data.phones || [];
                         updatePhonesUI();
+                    } else if (data.type === 'messages_cleared') {
+                        displayedMessages = [];
+                        totalMessagesCount = 0;
+                        currentPage = 1;
+                        updateHistoryTableUI();
+                        updatePaginationUI();
                     } else if (data.type === 'message_new') {
                         totalMessagesCount++;
                         
                         const query = searchQuery.trim().toLowerCase();
                         const matchesSearch = !query || (
+                            (data.message.type && data.message.type.toLowerCase().includes(query)) ||
+                            (data.message.sender && data.message.sender.toLowerCase().includes(query)) ||
                             (data.message.to && data.message.to.toLowerCase().includes(query)) ||
                             (data.message.message && data.message.message.toLowerCase().includes(query)) ||
                             (data.message.status && data.message.status.toLowerCase().includes(query)) ||
@@ -1369,10 +1385,13 @@
             const previewTotalCount = document.getElementById('preview-total-count');
 
             if (files.length > 0) {
+                selectedCsvFiles = files;
+                // Reset file input value so selecting the same file next time triggers change event
+                csvFileInput.value = '';
                 uploadCsvBtn.disabled = false;
                 
                 let allMessages = [];
-                for (const file of files) {
+                for (const file of selectedCsvFiles) {
                     try {
                         const text = await file.text();
                         const rows = parseCSV(text);
@@ -1417,6 +1436,7 @@
                 }
             } else {
                 uploadCsvBtn.disabled = true;
+                selectedCsvFiles = [];
                 previewMessages = [];
                 previewCurrentPage = 1;
                 updateCsvPreviewTableUI();
@@ -1425,7 +1445,7 @@
         });
 
         uploadCsvBtn.addEventListener('click', async () => {
-            const files = Array.from(csvFileInput.files);
+            const files = selectedCsvFiles;
             if (files.length === 0) return;
 
             uploadCsvBtn.disabled = true;
@@ -1454,6 +1474,7 @@
             }
 
             appendLog(`Total queued from ${files.length} file(s): ${totalQueued} messages.`);
+            selectedCsvFiles = [];
             csvFileInput.value = '';
             uploadCsvBtn.disabled = true;
 
@@ -1643,21 +1664,21 @@
 
         function updateHistoryTableUI() {
             if (displayedMessages.length === 0) {
-                historyBody.innerHTML = `<tr><td colspan="6" class="no-data">${searchQuery ? 'No matching messages found.' : 'No messages processed.'}</td></tr>`;
+                historyBody.innerHTML = `<tr><td colspan="8" class="no-data">${searchQuery ? 'No matching messages found.' : 'No messages processed.'}</td></tr>`;
                 return;
             }
 
             historyBody.innerHTML = displayedMessages.map(m => {
-                const timeStr = new Date(m.createdAt).toLocaleTimeString();
+                const timeStr = new Date(m.createdAt).toLocaleString();
                 const badgeClass = `badge badge-${m.status}`;
-                const devText = m.deviceModel ? `<div style="font-size: 9px; color: var(--text-muted);">${esc(m.deviceModel)}</div>` : '';
+                const typeBadgeClass = `badge badge-${m.type || 'single'}`;
+                const phoneText = m.deviceModel || '-';
                 const errText = m.error ? `<div style="font-size: 9px; color: var(--danger);">${esc(m.error)}</div>` : '';
                 return `
                     <tr>
-                        <td style="font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--text-muted)">
-                            ${esc(m.id.substring(0, 8))}...
-                            ${devText}
-                        </td>
+                        <td style="color: var(--text-muted); font-weight: 500;">${esc(phoneText)}</td>
+                        <td><span class="${typeBadgeClass}">${esc(m.type || 'single')}</span></td>
+                        <td><strong>${esc(m.sender || '-')}</strong></td>
                         <td><strong>${esc(m.to)}</strong></td>
                         <td><span style="font-size:10px; opacity:0.8;">SIM ${m.sim}</span></td>
                         <td style="max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(m.message)}">${esc(m.message)}</td>
@@ -1696,6 +1717,26 @@
             
             pageSizeSelect.value = pageSize;
         }
+
+        // Clear transmission logs click listener
+        const clearLogsBtn = document.getElementById('clear-logs-btn');
+        clearLogsBtn.addEventListener('click', () => {
+            if (!confirm('Are you sure you want to permanently clear all transmission logs?')) return;
+            clearLogsBtn.disabled = true;
+            fetch('/api/clear-messages', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    appendLog(`Transmission logs cleared.`);
+                } else {
+                    appendLog(`Error clearing logs: ${data.error}`, true);
+                }
+            })
+            .catch(err => appendLog(`Network error clearing logs: ${err.message}`, true))
+            .finally(() => {
+                clearLogsBtn.disabled = false;
+            });
+        });
 
         // Search & Pagination event listeners
         const logSearchInput = document.getElementById('log-search');

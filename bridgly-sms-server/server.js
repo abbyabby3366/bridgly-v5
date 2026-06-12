@@ -226,6 +226,8 @@ function processBulkQueue() {
         const msgId = task.id;
         const record = {
             id: msgId,
+            type: 'bulk',
+            sender: task.sender,
             to: task.recipient,
             message: task.message,
             sim: foundSimSlot,
@@ -430,6 +432,21 @@ app.post('/api/settings', (req, res) => {
     res.json({ success: true, settings });
 });
 
+// Clear Message Transmission Logs
+app.post('/api/clear-messages', async (req, res) => {
+    try {
+        messageHistory.length = 0;
+        if (db) {
+            await db.collection('message_history').deleteMany({});
+        }
+        addLog(`Message transmission history cleared.`);
+        broadcastToWeb({ type: 'messages_cleared' });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: `Failed to clear messages: ${e.message}` });
+    }
+});
+
 // CSV Upload Endpoint
 app.post('/api/upload-csv', (req, res) => {
     const { csvText } = req.body;
@@ -529,6 +546,8 @@ app.post('/api/send', (req, res) => {
 
     const record = {
         id: msgId,
+        type: 'single',
+        sender: simSlot === 2 ? targetPhone.info.sim2Number : targetPhone.info.sim1Number,
         to,
         message,
         sim: simSlot,
@@ -577,6 +596,8 @@ app.get('/api/messages', async (req, res) => {
             const searchRegex = new RegExp(cleanSearch, 'i');
             filter.$or = [
                 { id: searchRegex },
+                { type: searchRegex },
+                { sender: searchRegex },
                 { to: searchRegex },
                 { message: searchRegex },
                 { status: searchRegex },
