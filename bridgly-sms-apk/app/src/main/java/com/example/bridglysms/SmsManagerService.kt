@@ -150,13 +150,20 @@ class SmsManagerService {
                 SmsManager.getDefault()
             } else {
                 context.getSystemService(SmsManager::class.java)
+                    ?: @Suppress("DEPRECATION") SmsManager.getDefault()
             }
         }
 
         return if (Build.VERSION.SDK_INT < 31) {
             SmsManager.getSmsManagerForSubscriptionId(subscriptionId)
         } else {
-            context.getSystemService(SmsManager::class.java).createForSubscriptionId(subscriptionId)
+            val smsManager = context.getSystemService(SmsManager::class.java)
+            if (smsManager != null) {
+                smsManager.createForSubscriptionId(subscriptionId)
+            } else {
+                @Suppress("DEPRECATION")
+                SmsManager.getDefault()
+            }
         }
     }
 

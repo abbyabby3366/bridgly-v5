@@ -114,13 +114,8 @@ class MainActivity : ComponentActivity() {
 
         val filterSent = IntentFilter("com.httpsms.DIRECT_SMS_SENT")
         val filterDelivered = IntentFilter("com.httpsms.DIRECT_SMS_DELIVERED")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(directSmsSentReceiver, filterSent, RECEIVER_EXPORTED)
-            registerReceiver(directSmsDeliveredReceiver, filterDelivered, RECEIVER_EXPORTED)
-        } else {
-            registerReceiver(directSmsSentReceiver, filterSent)
-            registerReceiver(directSmsDeliveredReceiver, filterDelivered)
-        }
+        ContextCompat.registerReceiver(this, directSmsSentReceiver, filterSent, ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, directSmsDeliveredReceiver, filterDelivered, ContextCompat.RECEIVER_EXPORTED)
 
         val sharedPref = getSharedPreferences("BridglySmsConfig", Context.MODE_PRIVATE)
         val initialUrl = sharedPref.getString("server_url", "wss://bridgly-v5.onrender.com") ?: "wss://bridgly-v5.onrender.com"
@@ -354,13 +349,18 @@ fun SmsGatewayDashboard(
 
     LaunchedEffect(Unit) {
         refreshSimInfo()
+        val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
         SmsService.onConnectionStateChanged = {
-            connectionState = SmsService.connectionState
-            refreshSimInfo()
+            mainHandler.post {
+                connectionState = SmsService.connectionState
+                refreshSimInfo()
+            }
         }
         SmsService.onLogAdded = {
-            logs.clear()
-            logs.addAll(SmsService.logs)
+            mainHandler.post {
+                logs.clear()
+                logs.addAll(SmsService.logs)
+            }
         }
     }
 

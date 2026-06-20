@@ -93,6 +93,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+wss.on('error', (err) => {
+    console.error('WebSocket Server error:', err);
+});
+
 const connectedPhones = new Map();
 const messageHistory = [];
 const webClients = new Set();
@@ -212,7 +216,11 @@ function broadcastToWeb(data) {
     const payload = JSON.stringify(data);
     for (const client of webClients) {
         if (client.readyState === WebSocket.OPEN) {
-            client.send(payload);
+            try {
+                client.send(payload);
+            } catch (err) {
+                console.error(`Failed to send message to web client: ${err.message}`);
+            }
         }
     }
 }
@@ -323,7 +331,7 @@ function processBulkQueue() {
         }
 
         const phone = connectedPhones.get(foundDevice);
-        if (!phone || phone.socket.readyState !== WebSocket.OPEN) {
+        if (!phone || !phone.socket || phone.socket.readyState !== WebSocket.OPEN) {
             record.status = 'failed';
             record.deviceId = foundDevice;
             record.error = `Device ${foundDevice} is offline`;
@@ -378,6 +386,10 @@ setInterval(processBulkQueue, 100);
 wss.on('connection', (ws, req) => {
     const url = req.url;
     addLog(`New connection from ${url}`);
+
+    ws.on('error', (err) => {
+        addLog(`WebSocket connection error: ${err.message}`);
+    });
 
     ws.on('message', (messageText) => {
         try {
@@ -468,6 +480,7 @@ wss.on('connection', (ws, req) => {
             const phone = connectedPhones.get(ws.deviceId);
             if (phone && phone.socket === ws) {
                 phone.info.online = false;
+                phone.socket = null; // Prevent memory leak and hold of closed socket
                 addLog(`Android Phone disconnected: ${phone.info.deviceModel} [ID: ${ws.deviceId}]`);
                 broadcastActivePhones();
             }
@@ -706,14 +719,14 @@ app.post('/api/send', (req, res) => {
         targetPhone = connectedPhones.get(deviceId);
     } else {
         for (const phone of connectedPhones.values()) {
-            if (phone.info.online && phone.socket.readyState === WebSocket.OPEN) {
+            if (phone.info.online && phone.socket && phone.socket.readyState === WebSocket.OPEN) {
                 targetPhone = phone;
                 break;
             }
         }
     }
 
-    if (!targetPhone || targetPhone.socket.readyState !== WebSocket.OPEN) {
+    if (!targetPhone || !targetPhone.socket || targetPhone.socket.readyState !== WebSocket.OPEN) {
         return res.status(503).json({ error: 'Android phone is offline' });
     }
 
@@ -877,4 +890,19 @@ async function startServer() {
 startServer().catch(err => {
     console.error('Failed to start Bridgly SMS server:', err);
     process.exit(1);
+});
+
+// Global process error handlers to prevent unexpected crashes and log errors
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL: Uncaught Exception:', err);
+    if (typeof addLog === 'function') {
+        try { addLog(`Uncaught Exception: ${err.message}`); } catch (e) {}
+    }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+    if (typeof addLog === 'function') {
+        try { addLog(`Unhandled Rejection: ${reason}`); } catch (e) {}
+    }
 });

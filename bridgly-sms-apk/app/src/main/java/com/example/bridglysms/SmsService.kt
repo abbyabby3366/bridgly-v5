@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.IBinder
 import android.telephony.SmsManager
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import okhttp3.*
@@ -121,13 +122,8 @@ class SmsService : Service() {
         val filterSent = IntentFilter(sentAction)
         val filterDelivered = IntentFilter(deliveredAction)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(smsSentReceiver, filterSent, RECEIVER_EXPORTED)
-            registerReceiver(smsDeliveredReceiver, filterDelivered, RECEIVER_EXPORTED)
-        } else {
-            registerReceiver(smsSentReceiver, filterSent)
-            registerReceiver(smsDeliveredReceiver, filterDelivered)
-        }
+        ContextCompat.registerReceiver(this, smsSentReceiver, filterSent, ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, smsDeliveredReceiver, filterDelivered, ContextCompat.RECEIVER_EXPORTED)
 
         webSocketClient = OkHttpClient.Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
@@ -187,7 +183,11 @@ class SmsService : Service() {
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPendingIntent)
             .build()
 
-        startForeground(NOTIFICATION_ID, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, notification, 128) // 128 is FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     private fun stopForegroundService() {
@@ -352,7 +352,11 @@ class SmsService : Service() {
             }
         }
         Thread {
-            webSocket?.send(gson.toJson(payload))
+            try {
+                webSocket?.send(gson.toJson(payload))
+            } catch (e: Exception) {
+                // Ignore
+            }
         }.start()
     }
 
