@@ -412,12 +412,13 @@ wss.on('connection', (ws, req) => {
                     sim2Number: detectedSim2 || null,
                     online: true,
                     battery: data.battery || 100,
+                    apkVersion: data.apkVersion || 'unknown',
                     lastSeen: new Date().toISOString()
                 };
                 ws.deviceId = deviceId;
                 connectedPhones.set(deviceId, { socket: ws, info: phoneInfo });
                 
-                addLog(`Android Phone registered: ${phoneInfo.deviceModel} [ID: ${deviceId}] (SIM 1: ${phoneInfo.sim1Carrier} [${detectedSim1 || 'null'}], SIM 2: ${phoneInfo.sim2Carrier} [${detectedSim2 || 'null'}])`);
+                addLog(`Android Phone registered: ${phoneInfo.deviceModel} [ID: ${deviceId}] (SIM 1: ${phoneInfo.sim1Carrier} [${detectedSim1 || 'null'}], SIM 2: ${phoneInfo.sim2Carrier} [${detectedSim2 || 'null'}], APK: v${phoneInfo.apkVersion})`);
                 broadcastActivePhones(true);
             } else if (data.action === 'phone_status_update') {
                 const deviceId = data.deviceId || 'unknown';
@@ -425,6 +426,7 @@ wss.on('connection', (ws, req) => {
                 if (phone) {
                     phone.info.lastSeen = new Date().toISOString();
                     if (data.battery !== undefined) phone.info.battery = data.battery;
+                    if (data.apkVersion !== undefined) phone.info.apkVersion = data.apkVersion;
                     phone.info.online = true;
                     broadcastActivePhones();
                 }

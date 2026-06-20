@@ -985,7 +985,7 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <h1>Bridgly SMS Gateway v5.1.1</h1>
+                <h1>Bridgly SMS Gateway v5.1.2</h1>
             </div>
             <div class="header-controls">
                 <div class="status-badge">
@@ -1280,7 +1280,7 @@
                                     <th>Message</th>
                                     <th style="width: 110px;">Status</th>
                                     <th style="width: 140px;">Date / Time</th>
-                                    <th style="width: 70px; text-align: right;">Action</th>
+                                    <th class="action-column" style="width: 70px; text-align: right;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="history-body">
@@ -1581,6 +1581,7 @@
                 const sim1Number = (p.sim1Number || '').toLowerCase();
                 const sim2Carrier = (p.sim2Carrier || '').toLowerCase();
                 const sim2Number = (p.sim2Number || '').toLowerCase();
+                const apkVersion = (p.apkVersion || '').toLowerCase();
                 const battery = p.battery !== undefined ? String(p.battery) : '';
                 const lastSeen = p.lastSeen ? new Date(p.lastSeen).toLocaleString().toLowerCase() : '';
                 const status = p.online ? 'online' : 'offline';
@@ -1591,6 +1592,7 @@
                     sim1Number.includes(query) ||
                     sim2Carrier.includes(query) ||
                     sim2Number.includes(query) ||
+                    apkVersion.includes(query) ||
                     battery.includes(query) ||
                     lastSeen.includes(query) ||
                     status.includes(query);
@@ -1634,6 +1636,10 @@
                                     <span style="color: var(--text-muted);">SIM 2 (${esc(p.sim2Carrier)}):</span>
                                     <span class="phone-select-link" onclick="selectPhoneNumber('${esc(p.deviceId)}', 2)" title="Click to use this number">${esc(p.sim2Number || 'null')}</span>
                                 </div>` : ''}
+                                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                                    <span style="color: var(--text-muted);">APK Version:</span>
+                                    <span style="font-weight: 500; color: var(--text);">v${esc(p.apkVersion || 'unknown')}</span>
+                                </div>
                                 <div style="display: flex; justify-content: space-between; margin-top: 0.35rem; font-size: 10px; color: var(--text-muted);">
                                     ${batteryText}
                                     <span>Last Heartbeat: ${formatRelativeTime(p.lastSeen)}</span>
@@ -2148,7 +2154,7 @@
                             ${errText}
                         </td>
                         <td style="color: var(--text-muted);">${timeStr}</td>
-                        <td style="text-align: right;">${retryBtn}</td>
+                        <td class="action-column" style="text-align: right;">${retryBtn}</td>
                     </tr>
                 `;
             }).join('');
@@ -2408,6 +2414,33 @@
         }
 
         initCollapsible();
+
+        function initActionColumnToggle() {
+            const historyTable = document.getElementById('history-table');
+            const toggleActionCheckbox = document.getElementById('toggle-action-column');
+
+            const savedState = localStorage.getItem('action_column_visible');
+            const isVisible = savedState === 'true'; // defaults to false (collapsed by default)
+
+            toggleActionCheckbox.checked = isVisible;
+            if (isVisible) {
+                historyTable.classList.remove('hide-action-column');
+            } else {
+                historyTable.classList.add('hide-action-column');
+            }
+
+            toggleActionCheckbox.addEventListener('change', () => {
+                const show = toggleActionCheckbox.checked;
+                if (show) {
+                    historyTable.classList.remove('hide-action-column');
+                } else {
+                    historyTable.classList.add('hide-action-column');
+                }
+                localStorage.setItem('action_column_visible', show);
+            });
+        }
+
+        initActionColumnToggle();
 
         // Initialize websocket connection
         connect();

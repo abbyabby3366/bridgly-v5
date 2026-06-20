@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
 import android.telephony.SmsManager
@@ -42,6 +43,7 @@ class SmsService : Service() {
             addProperty("deviceId", deviceId)
             addProperty("connectionState", connectionState)
             addProperty("battery", getBatteryLevel())
+            addProperty("apkVersion", getApkVersion())
         }
         Thread {
             try {
@@ -55,6 +57,20 @@ class SmsService : Service() {
     private fun getBatteryLevel(): Int {
         val bm = getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager
         return bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+    }
+
+    private fun getApkVersion(): String {
+        return try {
+            val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, 0)
+            }
+            pInfo.versionName ?: "unknown"
+        } catch (e: Exception) {
+            "unknown"
+        }
     }
 
     private val sentAction = "com.httpsms.SMS_SENT"
@@ -251,6 +267,7 @@ class SmsService : Service() {
                     addProperty("sim2Carrier", sim2Carrier)
                     addProperty("sim1Number", sim1Number)
                     addProperty("sim2Number", sim2Number)
+                    addProperty("apkVersion", getApkVersion())
                 }
                 webSocket.send(gson.toJson(registerMsg))
             }
