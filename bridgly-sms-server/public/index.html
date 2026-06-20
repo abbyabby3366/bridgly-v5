@@ -593,6 +593,11 @@
             background: rgba(255, 255, 255, 0.02);
         }
 
+        /* Hide Action Column rule */
+        .hide-action-column .action-column {
+            display: none;
+        }
+
         /* Badges */
         .badge {
             display: inline-flex;
@@ -1256,9 +1261,15 @@
                                 <option value="failed">Failed</option>
                             </select>
                         </div>
+                        <div class="form-group"
+                            style="flex-direction: row; align-items: center; gap: 0.4rem; margin: 0; margin-left: auto;">
+                            <input type="checkbox" id="toggle-action-column" style="cursor: pointer;">
+                            <label for="toggle-action-column"
+                                style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin: 0; white-space: nowrap; cursor: pointer;">Show Action Column</label>
+                        </div>
                     </div>
                     <div class="table-wrap">
-                        <table>
+                        <table id="history-table" class="hide-action-column">
                             <thead>
                                 <tr>
                                     <th style="width: 130px;">Phone</th>
