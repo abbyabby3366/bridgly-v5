@@ -803,6 +803,129 @@
             background: rgba(79, 70, 229, 0.15);
         }
 
+        /* Stats Card Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 400px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border);
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.15rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+
+        .stats-section-header {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        /* Tooltip icon */
+        .stat-tooltip-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .stat-tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: help;
+            flex-shrink: 0;
+            line-height: 1;
+            user-select: none;
+        }
+
+        .stat-tooltip-icon:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .stat-tooltip-text {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e1e24;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 5px;
+            padding: 0.45rem 0.55rem;
+            font-size: 10px;
+            font-weight: 400;
+            color: var(--text);
+            white-space: normal;
+            width: 280px;
+            line-height: 1.4;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .stat-tooltip-text::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .stat-tooltip-wrap:hover .stat-tooltip-text {
+            display: block;
+        }
+
         /* ===== Mobile Responsive Styles ===== */
         @media (max-width: 600px) {
             body {
@@ -985,7 +1108,7 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <h1>Bridgly SMS Gateway v5.1.4</h1>
+                <h1>Bridgly SMS Gateway v5.1.4.1</h1>
             </div>
             <div class="header-controls">
                 <div class="status-badge">
@@ -1204,16 +1327,36 @@
 
         <!-- Bottom split section: logs and history table -->
         <div class="split-bottom">
-            <!-- Left Console Logs -->
-            <div class="card" id="console-card">
-                <div class="card-header" id="console-header" style="cursor: pointer; user-select: none;">
-                    <h2 class="card-title">
-                        <span>Live Gateway Logs</span>
-                        <span class="toggle-icon">▼</span>
-                    </h2>
+            <!-- Left Column: Logs & Stats -->
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <!-- Left Console Logs -->
+                <div class="card" id="console-card">
+                    <div class="card-header" id="console-header" style="cursor: pointer; user-select: none;">
+                        <h2 class="card-title">
+                            <span>Live Gateway Logs</span>
+                            <span class="toggle-icon">▼</span>
+                        </h2>
+                    </div>
+                    <div id="console-logs" class="console">
+                        <div class="console-line">Console active. Awaiting websocket connection...</div>
+                    </div>
                 </div>
-                <div id="console-logs" class="console">
-                    <div class="console-line">Console active. Awaiting websocket connection...</div>
+
+                <!-- Stats Card -->
+                <div class="card" id="stats-card">
+                    <div class="card-header"
+                        style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 class="card-title">
+                            <span>Transmission Statistics</span>
+                        </h2>
+                        <button id="refresh-stats-btn" class="btn btn-secondary"
+                            style="padding: 0.25rem 0.45rem; font-size: 10px; line-height: 1;">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                    <div id="stats-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div class="no-data">Loading statistics...</div>
+                    </div>
                 </div>
             </div>
 
@@ -1265,7 +1408,8 @@
                             style="flex-direction: row; align-items: center; gap: 0.4rem; margin: 0; margin-left: auto;">
                             <input type="checkbox" id="toggle-action-column" style="cursor: pointer;">
                             <label for="toggle-action-column"
-                                style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin: 0; white-space: nowrap; cursor: pointer;">Show Action Column</label>
+                                style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin: 0; white-space: nowrap; cursor: pointer;">Show
+                                Action Column</label>
                         </div>
                     </div>
                     <div class="table-wrap">
@@ -1484,6 +1628,7 @@
                         updatePhonesUI();
                         updateQueueUI(data.queueLength);
                         fetchMessagesFromServer();
+                        fetchAndRenderStats();
                     } else if (data.type === 'phones_list') {
                         phones = data.phones || [];
                         updatePhonesUI();
@@ -1493,6 +1638,7 @@
                         currentPage = 1;
                         updateHistoryTableUI();
                         updatePaginationUI();
+                        fetchAndRenderStats();
                     } else if (data.type === 'message_new') {
                         totalMessagesCount++;
 
@@ -1518,12 +1664,14 @@
                             updateHistoryTableUI();
                         }
                         updatePaginationUI();
+                        fetchAndRenderStats();
                     } else if (data.type === 'message_update') {
                         const idx = displayedMessages.findIndex(m => m.id === data.message.id);
                         if (idx !== -1) {
                             displayedMessages[idx] = data.message;
                             updateHistoryTableUI();
                         }
+                        fetchAndRenderStats();
                     } else if (data.type === 'log') {
                         appendLog(data.log);
                     } else if (data.type === 'queue_status') {
@@ -2501,6 +2649,386 @@
                 console.error('Failed to copy text: ', err);
             });
         });
+
+        // Helper: create tooltip HTML
+        function tooltip(text) {
+            return `<span class="stat-tooltip-wrap"><span class="stat-tooltip-icon">?</span><span class="stat-tooltip-text">${text}</span></span>`;
+        }
+
+        // Helper: format time ago from ISO string
+        function formatAgeFromISO(isoStr) {
+            if (!isoStr) return 'N/A';
+            const diffMs = Date.now() - new Date(isoStr).getTime();
+            const mins = Math.floor(diffMs / 60000);
+            const hours = Math.floor(mins / 60);
+            const days = Math.floor(hours / 24);
+            if (days > 0) return `${days}d ${hours % 24}h ago`;
+            if (hours > 0) return `${hours}h ${mins % 60}m ago`;
+            return `${mins}m ago`;
+        }
+
+        // Fetch and render message transmission statistics
+        function fetchAndRenderStats() {
+            const statsContainer = document.getElementById('stats-container');
+            if (!statsContainer) return;
+
+            fetch('/api/message-stats')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        statsContainer.innerHTML = `<div class="no-data" style="color: var(--danger);">Error loading stats: ${esc(data.error)}</div>`;
+                        return;
+                    }
+
+                    const total = data.total || 0;
+                    if (total === 0) {
+                        statsContainer.innerHTML = `<div class="no-data">No transmission logs available for stats.</div>`;
+                        return;
+                    }
+
+                    // Process status counts
+                    let delivered = 0, failed = 0, sent = 0, pending = 0;
+                    data.statusStats.forEach(s => {
+                        if (s._id === 'delivered') delivered = s.count;
+                        else if (s._id === 'failed') failed = s.count;
+                        else if (s._id === 'sent') sent = s.count;
+                        else if (s._id === 'pending') pending = s.count;
+                    });
+
+                    const successRate = total > 0 ? ((delivered / total) * 100).toFixed(1) : '0.0';
+                    const nonFailedRate = total > 0 ? (((total - failed) / total) * 100).toFixed(1) : '0.0';
+                    const uniqueRecipients = data.uniqueRecipients || 0;
+
+                    // ──────────────────────────────────────────
+                    // 1. OVERVIEW GRID (combined)
+                    // ──────────────────────────────────────────
+                    let html = `
+                        <div class="stats-section-header">
+                            <span>📊 Overview</span>
+                            ${tooltip('High-level summary of all message transmissions.<br><br><b>Delivered Rate</b> = Delivered ÷ Total<br><b>Non-Failed Rate</b> = (Total − Failed) ÷ Total<br><br><b>Sent (No DR)</b> — Carrier accepted the SMS but never confirmed delivery to the recipient.<br><br><b>Pending/Stuck</b> — Messages dispatched to a phone that never reported any outcome.')}
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <span class="stat-value" style="color: var(--info);">${total}</span>
+                                <span class="stat-label">Total Logs</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-value" style="color: var(--success);">${delivered}</span>
+                                <span class="stat-label">Delivered</span>
+                            </div>
+                            <div class="stat-box" style="border-color: rgba(245, 158, 11, 0.25);">
+                                <span class="stat-value" style="color: var(--warning);">${sent}</span>
+                                <span class="stat-label">Sent (No DR)</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-value" style="color: var(--danger);">${failed}</span>
+                                <span class="stat-label">Failed</span>
+                            </div>
+                            <div class="stat-box" style="border-color: rgba(239, 68, 68, 0.2);">
+                                <span class="stat-value" style="color: #fb923c;">${pending}</span>
+                                <span class="stat-label">Pending/Stuck</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-value" style="color: #a855f7;">${successRate}%</span>
+                                <span class="stat-label">Delivered Rate</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-value" style="color: #22d3ee;">${nonFailedRate}%</span>
+                                <span class="stat-label">Non-Failed Rate</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-value" style="color: var(--info);">${uniqueRecipients}</span>
+                                <span class="stat-label">Unique Recipients</span>
+                            </div>
+                        </div>
+                    `;
+
+                    // Most recent pending message
+                    if (data.newestPending) {
+                        html += `
+                            <div style="font-size: 10px; color: var(--text-muted); padding: 0.3rem 0.4rem; background: rgba(251, 146, 60, 0.05); border: 1px solid rgba(251, 146, 60, 0.15); border-radius: 4px; display: flex; align-items: center; gap: 0.3rem;">
+                                <span>⏳</span>
+                                <span>Most recent pending message: <strong style="color: #fb923c;">${formatAgeFromISO(data.newestPending)}</strong> (${new Date(data.newestPending).toLocaleString()})</span>
+                            </div>
+                        `;
+                    }
+
+                    // ──────────────────────────────────────────
+                    // 3. PER-SENDER (SIM NUMBER) SUCCESS RATE
+                    // ──────────────────────────────────────────
+                    if (data.senderStats && data.senderStats.length > 0) {
+                        html += `
+                            <div style="margin-top: 0.5rem;">
+                                <div class="stats-section-header">
+                                    <span>📱 Per-Sender SIM Performance</span>
+                                    ${tooltip('Breakdown by sender phone number (SIM).<br><br>Shows how many messages each SIM number has sent and their delivery success rate.<br><br>Low success rates on specific SIMs may indicate:<br>• Carrier blocking<br>• SIM card issues<br>• Network problems on that line')}
+                                </div>
+                                <input type="text" id="sender-search-input" placeholder="Search sender number..." style="width: 100%; padding: 0.35rem 0.5rem; font-size: 10px; background: #1a1a2e; border: 1px solid var(--border); border-radius: 4px; color: var(--text); outline: none; margin-bottom: 0.35rem; box-sizing: border-box;" />
+                                <div class="table-wrap" style="max-height: 200px; overflow-y: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                                        <thead>
+                                            <tr>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e;">Sender Number</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right;">Total</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: var(--success);">Delivered</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: var(--warning);">Sent</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: var(--danger);">Failed</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: #fb923c;">Pending</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: #a855f7;">Del %</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: #22d3ee;">NF %</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sender-stats-tbody">
+                                            ${data.senderStats.map(s => {
+                            const sRate = s.total > 0 ? ((s.delivered / s.total) * 100).toFixed(1) : '0.0';
+                            const sNfRate = s.total > 0 ? (((s.total - s.failed) / s.total) * 100).toFixed(1) : '0.0';
+                            const rateColor = parseFloat(sRate) >= 70 ? 'var(--success)' : parseFloat(sRate) >= 40 ? 'var(--warning)' : 'var(--danger)';
+                            return `
+                                                    <tr data-sender="${esc(s._id)}">
+                                                        <td style="padding: 0.3rem 0.4rem; font-weight: 600; font-family: 'JetBrains Mono', monospace;">${esc(s._id)}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--text-muted);">${s.total}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--success); font-weight: 500;">${s.delivered}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--warning);">${s.sent}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--danger);">${s.failed}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: #fb923c;">${s.pending}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; font-weight: 700; color: ${rateColor};">${sRate}%</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; font-weight: 600; color: #22d3ee;">${sNfRate}%</td>
+                                                    </tr>
+                                                `;
+                        }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // ──────────────────────────────────────────
+                    // 4. DAILY TIMELINE
+                    // ──────────────────────────────────────────
+                    if (data.dailyStats && data.dailyStats.length > 0) {
+                        html += `
+                            <div style="margin-top: 0.5rem;">
+                                <div class="stats-section-header">
+                                    <span>📅 Daily Transmission Timeline</span>
+                                    ${tooltip('Message volume and success rates grouped by day (sorted newest first).<br><br><b>Sent</b> — Messages accepted by the phone but with no delivery confirmation.<br><br><b>Del %</b> = Delivered ÷ Total<br><b>NF %</b> = (Total − Failed) ÷ Total')}
+                                </div>
+                                <div class="table-wrap" style="max-height: 180px; overflow-y: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                                        <thead>
+                                            <tr>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e;">Date</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right;">Total</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: var(--success);">Deliv.</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: var(--warning);">Sent</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: var(--danger);">Failed</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: #fb923c;">Pending</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: #a855f7;">Del %</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: #22d3ee;">NF %</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${data.dailyStats.map(day => {
+                            const rate = day.total > 0 ? ((day.delivered / day.total) * 100).toFixed(0) : '0';
+                            const nfRate = day.total > 0 ? (((day.total - day.failed) / day.total) * 100).toFixed(0) : '0';
+                            return `
+                                                    <tr>
+                                                        <td style="padding: 0.3rem 0.4rem; font-weight: 500;">${esc(day._id)}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--text-muted);">${day.total}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--success); font-weight: 500;">${day.delivered}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--warning);">${day.sent}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--danger);">${day.failed}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: #fb923c;">${day.pending}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; font-weight: 600; color: #a855f7;">${rate}%</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; font-weight: 600; color: #22d3ee;">${nfRate}%</td>
+                                                    </tr>
+                                                `;
+                        }).reverse().join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // ──────────────────────────────────────────
+                    // 5. HOURLY THROUGHPUT
+                    // ──────────────────────────────────────────
+                    if (data.hourlyStats && data.hourlyStats.length > 0) {
+                        const latestDay = data.dailyStats && data.dailyStats.length > 0 ? data.dailyStats[data.dailyStats.length - 1]._id : 'Latest Day';
+                        html += `
+                            <div style="margin-top: 0.5rem;">
+                                <div class="stats-section-header">
+                                    <span>🕐 Hourly Throughput (${esc(latestDay)})</span>
+                                    ${tooltip('Message volume per hour for the most recent active day.<br><br>Helps identify:<br>• Peak sending hours<br>• Whether failures cluster at specific times<br><br>Clustered failures may suggest carrier rate-limiting or network congestion.')}
+                                </div>
+                                <div class="table-wrap" style="max-height: 160px; overflow-y: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                                        <thead>
+                                            <tr>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e;">Hour (UTC)</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right;">Total</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: var(--success);">Delivered</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: var(--danger);">Failed</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: #a855f7;">Del %</th>
+                                                <th style="padding: 0.3rem 0.4rem; background: #1a1a2e; text-align: right; color: #22d3ee;">NF %</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${data.hourlyStats.map(h => {
+                            const hRate = h.total > 0 ? ((h.delivered / h.total) * 100).toFixed(0) : '0';
+                            const hNfRate = h.total > 0 ? (((h.total - h.failed) / h.total) * 100).toFixed(0) : '0';
+                            return `
+                                                    <tr>
+                                                        <td style="padding: 0.3rem 0.4rem; font-weight: 500; font-family: 'JetBrains Mono', monospace;">${esc(h._id)}:00</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--text-muted);">${h.total}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--success); font-weight: 500;">${h.delivered}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--danger);">${h.failed}</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; font-weight: 600; color: #a855f7;">${hRate}%</td>
+                                                        <td style="padding: 0.3rem 0.4rem; text-align: right; font-weight: 600; color: #22d3ee;">${hNfRate}%</td>
+                                                    </tr>
+                                                `;
+                        }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // ──────────────────────────────────────────
+                    // 6. FAILURE REASON DISTRIBUTION
+                    // ──────────────────────────────────────────
+                    if (data.failureStats && data.failureStats.length > 0) {
+                        // Group "No phone SIM mapped to sender: XXXXX" entries into one
+                        const groupedFailures = [];
+                        let simMappedCount = 0;
+                        data.failureStats.forEach(f => {
+                            const label = f._id || '';
+                            if (label.startsWith('No phone SIM mapped to sender:')) {
+                                simMappedCount += f.count;
+                            } else {
+                                groupedFailures.push({ label: label || 'Unknown/Generic', count: f.count });
+                            }
+                        });
+                        if (simMappedCount > 0) {
+                            groupedFailures.push({ label: 'No phone SIM mapped to sender (combined)', count: simMappedCount });
+                        }
+                        // Sort by count descending
+                        groupedFailures.sort((a, b) => b.count - a.count);
+
+                        html += `
+                            <div style="margin-top: 0.5rem;">
+                                <div class="stats-section-header">
+                                    <span>⚠️ Failure Reason Distribution</span>
+                                    ${tooltip('All unique error messages from the Android SMS subsystem, grouped and sorted by frequency.<br><br><b>Common reasons:</b><br>• RIL/modem errors — hardware failures<br>• Carrier rejections<br>• "No phone SIM mapped" — server-side routing failure where the specified sender SIM was not connected<br><br>Similar "No phone SIM mapped" errors for different sender numbers are merged into one entry.')}
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 0.35rem; max-height: 220px; overflow-y: auto; padding-right: 0.2rem;">
+                                    ${groupedFailures.map(f => {
+                            const pct = ((f.count / failed) * 100).toFixed(1);
+                            return `
+                                            <div style="display: flex; flex-direction: column; gap: 0.15rem; background: rgba(239, 68, 68, 0.03); border: 1px solid rgba(239, 68, 68, 0.1); border-radius: 4px; padding: 0.35rem 0.5rem;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; gap: 0.5rem;">
+                                                    <span style="font-weight: 600; color: var(--text);">${esc(f.label)}</span>
+                                                    <span style="color: var(--danger); font-weight: 600; white-space: nowrap;">${f.count} (${pct}%)</span>
+                                                </div>
+                                                <div style="width: 100%; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; margin-top: 0.15rem;">
+                                                    <div style="width: ${pct}%; height: 100%; background: var(--danger);"></div>
+                                                </div>
+                                            </div>
+                                        `;
+                        }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // ──────────────────────────────────────────
+                    // 7. SIM SLOT & DEVICE BREAKDOWN
+                    // ──────────────────────────────────────────
+                    html += `<div style="margin-top: 0.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">`;
+
+                    // SIM Slot Usage
+                    if (data.simStats && data.simStats.length > 0) {
+                        html += `
+                            <div>
+                                <div class="stats-section-header">
+                                    <span>SIM Slot Usage</span>
+                                    ${tooltip('Messages grouped by which SIM card slot (1 or 2) was used to send.<br><br>Percentage shows the delivery success rate for each slot.<br><br>Helps identify if a particular SIM slot has hardware or carrier issues.')}
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                    ${data.simStats.map(s => {
+                            const sRate = s.total > 0 ? ((s.delivered / s.total) * 100).toFixed(0) : '0';
+                            const sNfRate = s.total > 0 ? (((s.total - s.failed) / s.total) * 100).toFixed(0) : '0';
+                            return `
+                                            <div style="font-size: 10px; display: flex; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 0.25rem 0.4rem; border: 1px solid var(--border); border-radius: 3px;">
+                                                <span style="color: var(--text-muted);">SIM ${s._id}:</span>
+                                                <span style="font-weight: 600; color: var(--text);">${s.total} <span style="font-size:9px; color: #a855f7; font-weight:normal;">(${sRate}% del</span> <span style="font-size:9px; color: #22d3ee; font-weight:normal;">${sNfRate}% nf)</span></span>
+                                            </div>
+                                        `;
+                        }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // Device Breakdown (all devices, no truncation)
+                    if (data.deviceStats && data.deviceStats.length > 0) {
+                        html += `
+                            <div>
+                                <div class="stats-section-header">
+                                    <span>Device Performance</span>
+                                    ${tooltip('Messages grouped by the Android device model that sent them.<br><br>Shows total volume and delivery success rate per device.<br><br>Devices with consistently low rates may have hardware or connectivity problems.')}
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 0.25rem; max-height: 120px; overflow-y: auto;">
+                                    ${data.deviceStats.map(d => {
+                            const dRate = d.total > 0 ? ((d.delivered / d.total) * 100).toFixed(0) : '0';
+                            const dNfRate = d.total > 0 ? (((d.total - d.failed) / d.total) * 100).toFixed(0) : '0';
+                            const model = d._id || 'Unknown';
+                            return `
+                                            <div style="font-size: 10px; display: flex; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 0.25rem 0.4rem; border: 1px solid var(--border); border-radius: 3px;">
+                                                <span style="color: var(--text-muted);">${esc(model)}</span>
+                                                <span style="font-weight: 600; color: var(--text);">${d.total} <span style="font-size:9px; color: #a855f7; font-weight:normal;">(${dRate}% del</span> <span style="font-size:9px; color: #22d3ee; font-weight:normal;">${dNfRate}% nf)</span></span>
+                                            </div>
+                                        `;
+                        }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    html += `</div>`;
+
+                    statsContainer.innerHTML = html;
+
+                    // Wire up sender search filter
+                    const senderSearchInput = document.getElementById('sender-search-input');
+                    if (senderSearchInput) {
+                        senderSearchInput.addEventListener('input', function () {
+                            const query = this.value.toLowerCase();
+                            const rows = document.querySelectorAll('#sender-stats-tbody tr');
+                            rows.forEach(row => {
+                                const sender = (row.getAttribute('data-sender') || '').toLowerCase();
+                                row.style.display = sender.includes(query) ? '' : 'none';
+                            });
+                        });
+                    }
+                })
+                .catch(err => {
+                    statsContainer.innerHTML = `<div class="no-data" style="color: var(--danger);">Failed to load stats: ${esc(err.message)}</div>`;
+                });
+        }
+
+        // Hook up stats refresh button
+        const refreshStatsBtn = document.getElementById('refresh-stats-btn');
+        if (refreshStatsBtn) {
+            refreshStatsBtn.addEventListener('click', () => {
+                fetchAndRenderStats();
+            });
+        }
+
+        // Initial stats load
+        fetchAndRenderStats();
     </script>
 </body>
 

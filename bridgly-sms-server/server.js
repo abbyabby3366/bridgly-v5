@@ -576,6 +576,132 @@ app.get('/download-apk', (req, res) => {
         `Please ensure the APK is placed in one of these locations.`);
 });
 
+
+// Get Message Statistics
+app.get('/api/message-stats', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    try {
+        const col = db.collection('message_history');
+        const total = await col.countDocuments();
+
+        const statusStats = await col.aggregate([
+            { $group: { _id: "$status", count: { $sum: 1 } } }
+        ]).toArray();
+
+        const failureStats = await col.aggregate([
+            { $match: { status: "failed" } },
+            { $group: { _id: "$error", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ]).toArray();
+
+        const deviceStats = await col.aggregate([
+            {
+                $group: {
+                    _id: "$deviceModel",
+                    total: { $sum: 1 },
+                    delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
+                    sent: { $sum: { $cond: [{ $eq: ["$status", "sent"] }, 1, 0] } },
+                    failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
+                    pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } }
+                }
+            },
+            { $sort: { total: -1 } }
+        ]).toArray();
+
+        const simStats = await col.aggregate([
+            {
+                $group: {
+                    _id: "$sim",
+                    total: { $sum: 1 },
+                    delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
+                    failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]).toArray();
+
+        const dailyStats = await col.aggregate([
+            {
+                $group: {
+                    _id: { $substr: ["$createdAt", 0, 10] },
+                    total: { $sum: 1 },
+                    delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
+                    sent: { $sum: { $cond: [{ $eq: ["$status", "sent"] }, 1, 0] } },
+                    failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
+                    pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]).toArray();
+
+        // Per-sender (SIM number) success rate
+        const senderStats = await col.aggregate([
+            { $match: { sender: { $ne: null } } },
+            {
+                $group: {
+                    _id: "$sender",
+                    total: { $sum: 1 },
+                    delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
+                    sent: { $sum: { $cond: [{ $eq: ["$status", "sent"] }, 1, 0] } },
+                    failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
+                    pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } }
+                }
+            },
+            { $sort: { total: -1 } }
+        ]).toArray();
+
+        // Unique recipients count
+        const uniqueRecipientsResult = await col.aggregate([
+            { $match: { to: { $ne: null } } },
+            { $group: { _id: "$to" } },
+            { $count: "count" }
+        ]).toArray();
+        const uniqueRecipients = uniqueRecipientsResult.length > 0 ? uniqueRecipientsResult[0].count : 0;
+
+        // Hourly throughput for the most recent active day
+        let hourlyStats = [];
+        if (dailyStats.length > 0) {
+            const latestDay = dailyStats[dailyStats.length - 1]._id; // e.g. "2026-06-22"
+            hourlyStats = await col.aggregate([
+                { $match: { createdAt: { $regex: `^${latestDay}` } } },
+                {
+                    $group: {
+                        _id: { $substr: ["$createdAt", 11, 2] },
+                        total: { $sum: 1 },
+                        delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
+                        failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]).toArray();
+        }
+
+        // Most recent pending message
+        let newestPending = null;
+        const newestPendingDoc = await col.find({ status: 'pending' }).sort({ createdAt: -1 }).limit(1).toArray();
+        if (newestPendingDoc.length > 0) {
+            newestPending = newestPendingDoc[0].createdAt;
+        }
+
+        res.json({
+            total,
+            statusStats,
+            failureStats,
+            deviceStats,
+            simStats,
+            dailyStats,
+            senderStats,
+            uniqueRecipients,
+            hourlyStats,
+            newestPending
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Settings Management
 app.get('/api/settings', (req, res) => {
     res.json(settings);
