@@ -64,3 +64,5 @@ tmp/
 phone_mappings.json
 settings.json
 server_status.json
+
+.fallow/

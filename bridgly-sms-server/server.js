@@ -583,20 +583,41 @@ app.get('/api/message-stats', async (req, res) => {
         return res.status(503).json({ error: 'Database not connected' });
     }
     try {
+        const { range } = req.query;
+        const filterQuery = {};
+        if (range && range !== 'all') {
+            const now = Date.now();
+            let sinceTime = null;
+            if (range === '1h') {
+                sinceTime = now - 60 * 60 * 1000;
+            } else if (range === '24h') {
+                sinceTime = now - 24 * 60 * 60 * 1000;
+            } else if (range === '7d') {
+                sinceTime = now - 7 * 24 * 60 * 60 * 1000;
+            } else if (range === '30d') {
+                sinceTime = now - 30 * 24 * 60 * 60 * 1000;
+            }
+            if (sinceTime) {
+                filterQuery.createdAt = { $gte: new Date(sinceTime).toISOString() };
+            }
+        }
+
         const col = db.collection('message_history');
-        const total = await col.countDocuments();
+        const total = await col.countDocuments(filterQuery);
 
         const statusStats = await col.aggregate([
+            { $match: filterQuery },
             { $group: { _id: "$status", count: { $sum: 1 } } }
         ]).toArray();
 
         const failureStats = await col.aggregate([
-            { $match: { status: "failed" } },
+            { $match: { ...filterQuery, status: "failed" } },
             { $group: { _id: "$error", count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]).toArray();
 
         const deviceStats = await col.aggregate([
+            { $match: filterQuery },
             {
                 $group: {
                     _id: "$deviceModel",
@@ -611,6 +632,7 @@ app.get('/api/message-stats', async (req, res) => {
         ]).toArray();
 
         const simStats = await col.aggregate([
+            { $match: filterQuery },
             {
                 $group: {
                     _id: "$sim",
@@ -623,6 +645,7 @@ app.get('/api/message-stats', async (req, res) => {
         ]).toArray();
 
         const dailyStats = await col.aggregate([
+            { $match: filterQuery },
             {
                 $group: {
                     _id: { $substr: ["$createdAt", 0, 10] },
@@ -638,7 +661,7 @@ app.get('/api/message-stats', async (req, res) => {
 
         // Per-sender (SIM number) success rate
         const senderStats = await col.aggregate([
-            { $match: { sender: { $ne: null } } },
+            { $match: { ...filterQuery, sender: { $ne: null } } },
             {
                 $group: {
                     _id: "$sender",
@@ -654,7 +677,7 @@ app.get('/api/message-stats', async (req, res) => {
 
         // Unique recipients count
         const uniqueRecipientsResult = await col.aggregate([
-            { $match: { to: { $ne: null } } },
+            { $match: { ...filterQuery, to: { $ne: null } } },
             { $group: { _id: "$to" } },
             { $count: "count" }
         ]).toArray();
@@ -664,8 +687,11 @@ app.get('/api/message-stats', async (req, res) => {
         let hourlyStats = [];
         if (dailyStats.length > 0) {
             const latestDay = dailyStats[dailyStats.length - 1]._id; // e.g. "2026-06-22"
+            const hourlyMatch = filterQuery.createdAt
+                    ? { $and: [{ createdAt: filterQuery.createdAt }, { createdAt: { $regex: `^${latestDay}` } }] }
+                    : { createdAt: { $regex: `^${latestDay}` } };
             hourlyStats = await col.aggregate([
-                { $match: { createdAt: { $regex: `^${latestDay}` } } },
+                { $match: hourlyMatch },
                 {
                     $group: {
                         _id: { $substr: ["$createdAt", 11, 2] },
@@ -680,7 +706,7 @@ app.get('/api/message-stats', async (req, res) => {
 
         // Most recent pending message
         let newestPending = null;
-        const newestPendingDoc = await col.find({ status: 'pending' }).sort({ createdAt: -1 }).limit(1).toArray();
+        const newestPendingDoc = await col.find({ ...filterQuery, status: 'pending' }).sort({ createdAt: -1 }).limit(1).toArray();
         if (newestPendingDoc.length > 0) {
             newestPending = newestPendingDoc[0].createdAt;
         }

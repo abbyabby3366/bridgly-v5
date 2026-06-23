@@ -1345,14 +1345,23 @@
                 <!-- Stats Card -->
                 <div class="card" id="stats-card">
                     <div class="card-header"
-                        style="display: flex; justify-content: space-between; align-items: center;">
+                        style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                         <h2 class="card-title">
                             <span>Transmission Statistics</span>
                         </h2>
-                        <button id="refresh-stats-btn" class="btn btn-secondary"
-                            style="padding: 0.25rem 0.45rem; font-size: 10px; line-height: 1;">
-                            🔄 Refresh
-                        </button>
+                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                            <select id="stats-time-range" class="form-input" style="width: auto; padding: 0.25rem 1.5rem 0.25rem 0.45rem; font-size: 10px; height: auto; min-height: 24px; background-position: right 4px center;">
+                                <option value="1h">Last Hour</option>
+                                <option value="24h">Last 24 Hours</option>
+                                <option value="7d">Last 7 Days</option>
+                                <option value="30d">Last 30 Days</option>
+                                <option value="all" selected>All Time</option>
+                            </select>
+                            <button id="refresh-stats-btn" class="btn btn-secondary"
+                                style="padding: 0.25rem 0.45rem; font-size: 10px; line-height: 1; min-height: 24px;">
+                                🔄 Refresh
+                            </button>
+                        </div>
                     </div>
                     <div id="stats-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
                         <div class="no-data">Loading statistics...</div>
@@ -2672,7 +2681,10 @@
             const statsContainer = document.getElementById('stats-container');
             if (!statsContainer) return;
 
-            fetch('/api/message-stats')
+            const timeRangeSelect = document.getElementById('stats-time-range');
+            const range = timeRangeSelect ? timeRangeSelect.value : 'all';
+
+            fetch(`/api/message-stats?range=${range}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.error) {
@@ -3023,6 +3035,14 @@
         const refreshStatsBtn = document.getElementById('refresh-stats-btn');
         if (refreshStatsBtn) {
             refreshStatsBtn.addEventListener('click', () => {
+                fetchAndRenderStats();
+            });
+        }
+
+        // Hook up stats time range select change
+        const statsTimeRange = document.getElementById('stats-time-range');
+        if (statsTimeRange) {
+            statsTimeRange.addEventListener('change', () => {
                 fetchAndRenderStats();
             });
         }
