@@ -21,8 +21,8 @@ android {
         applicationId = "com.vernu.sms"
         minSdk = 28
         targetSdk = 34
-        versionCode = 4
-        versionName = "5.1.3"
+        versionCode = 5
+        versionName = "5.1.4"
     }
 
     buildTypes {

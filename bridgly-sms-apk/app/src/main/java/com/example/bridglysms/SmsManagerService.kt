@@ -105,14 +105,16 @@ class SmsManagerService {
             val list = localSubscriptionManager.activeSubscriptionInfoList
             if (list != null && list.isNotEmpty()) {
                 listReadSuccessful = true
-                if (simSlot == 1 && list.size > 0) {
-                    subscriptionId = list[0].subscriptionId
-                    logMsg = "SIM 1 selected. SubID: $subscriptionId"
-                } else if (simSlot == 2 && list.size > 1) {
-                    subscriptionId = list[1].subscriptionId
-                    logMsg = "SIM 2 selected. SubID: $subscriptionId"
+                // Match by actual simSlotIndex (0-based) instead of list position
+                val targetSlotIndex = simSlot - 1 // simSlot is 1-based, simSlotIndex is 0-based
+                val matchedInfo = list.find { it.simSlotIndex == targetSlotIndex }
+                if (matchedInfo != null) {
+                    subscriptionId = matchedInfo.subscriptionId
+                    logMsg = "SIM $simSlot selected (slotIndex=$targetSlotIndex). SubID: $subscriptionId"
                 } else {
-                    logMsg = "SIM slot $simSlot requested but only ${list.size} SIM(s) found. Using default SubID: $subscriptionId"
+                    // Log all available slots for debugging
+                    val availableSlots = list.map { "slot=${it.simSlotIndex},subId=${it.subscriptionId}" }.joinToString(", ")
+                    logMsg = "SIM slot $simSlot (slotIndex=$targetSlotIndex) not found in active subscriptions [$availableSlots]. Using default SubID: $subscriptionId"
                 }
             } else {
                 logMsg = "No active subscriptions found from SubscriptionManager."

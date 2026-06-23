@@ -110,6 +110,24 @@ class SmsService : Service() {
                 SmsManager.RESULT_ERROR_NO_SERVICE -> "No service"
                 SmsManager.RESULT_ERROR_NULL_PDU -> "Null PDU"
                 SmsManager.RESULT_ERROR_RADIO_OFF -> "Radio off"
+                SmsManager.RESULT_ERROR_LIMIT_EXCEEDED -> "SMS rate limit exceeded"
+                SmsManager.RESULT_ERROR_SHORT_CODE_NOT_ALLOWED -> "Short code not allowed"
+                SmsManager.RESULT_ERROR_SHORT_CODE_NEVER_ALLOWED -> "Short code permanently blocked"
+                SmsManager.RESULT_ERROR_FDN_CHECK_FAILURE -> "Fixed dialing number check failed"
+                SmsManager.RESULT_NO_DEFAULT_SMS_APP -> "No default SMS app"
+                // RIL / Modem-level errors
+                111 -> "Protocol error (carrier rejected SMS)"
+                124 -> "RIL internal error (modem failure)"
+                // Other common RIL errors
+                110 -> "RIL encoding error"
+                112 -> "RIL SMS rejected by network"
+                113 -> "RIL system error"
+                114 -> "RIL modem error"
+                115 -> "RIL network error"
+                116 -> "RIL request not supported"
+                117 -> "RIL invalid modem state"
+                118 -> "RIL network not ready"
+                119 -> "RIL operation not allowed"
                 else -> "Unknown error: $resultCode"
             }
 
