@@ -983,7 +983,12 @@ app.get('/api/messages', async (req, res) => {
         }
 
         if (sender) {
-            conditions.push({ sender: sender.trim() });
+            // Normalize: strip non-digits and match on last 9 digits to handle format differences (+601... vs 601...)
+            const senderDigits = sender.trim().replace(/\D/g, '');
+            const senderSuffix = senderDigits.length >= 9 ? senderDigits.slice(-9) : senderDigits;
+            if (senderSuffix) {
+                conditions.push({ sender: { $regex: senderSuffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$' } });
+            }
         }
 
         if (status) {

@@ -1108,7 +1108,7 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <h1>Bridgly SMS Gateway v5.1.4.1</h1>
+                <h1>Bridgly SMS Gateway v5.1.4.2</h1>
             </div>
             <div class="header-controls">
                 <div class="status-badge">
@@ -1350,7 +1350,8 @@
                             <span>Transmission Statistics</span>
                         </h2>
                         <div style="display: flex; align-items: center; gap: 0.4rem;">
-                            <select id="stats-time-range" class="form-input" style="width: auto; padding: 0.25rem 1.5rem 0.25rem 0.45rem; font-size: 10px; height: auto; min-height: 24px; background-position: right 4px center;">
+                            <select id="stats-time-range" class="form-input"
+                                style="width: auto; padding: 0.25rem 1.5rem 0.25rem 0.45rem; font-size: 10px; height: auto; min-height: 24px; background-position: right 4px center;">
                                 <option value="1h">Last Hour</option>
                                 <option value="24h">Last 24 Hours</option>
                                 <option value="7d">Last 7 Days</option>
@@ -1396,7 +1397,7 @@
                                 style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin: 0; white-space: nowrap;">Sender
                                 Phone:</label>
                             <select id="filter-sender" class="form-input"
-                                style="width: 170px; padding: 0.3rem 0.5rem; font-size: 11px; height: auto;">
+                                style="width: 280px; padding: 0.3rem 0.5rem; font-size: 11px; height: auto;">
                                 <option value="">All Senders</option>
                             </select>
                         </div>
@@ -1511,6 +1512,13 @@
         let filterStatus = '';
         let displayedMessages = [];
         let totalMessagesCount = 0;
+
+        // Normalize phone number for comparison: strip non-digits, take last 9 digits
+        function normalizeSender(num) {
+            if (!num) return '';
+            const digits = num.toString().replace(/\D/g, '');
+            return digits.length >= 9 ? digits.slice(-9) : digits;
+        }
 
         // State for local CSV preview pagination
         let previewMessages = [];
@@ -1662,7 +1670,7 @@
                             (data.message.deviceModel && data.message.deviceModel.toLowerCase().includes(query))
                         );
 
-                        const matchesSender = !filterSender || (data.message.sender && data.message.sender.trim() === filterSender.trim());
+                        const matchesSender = !filterSender || (data.message.sender && normalizeSender(data.message.sender) === normalizeSender(filterSender));
                         const matchesStatus = !filterStatus || (data.message.status && data.message.status.trim() === filterStatus.trim());
 
                         if (currentPage === 1 && matchesSearch && matchesSender && matchesStatus) {
