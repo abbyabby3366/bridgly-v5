@@ -1108,7 +1108,7 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <h1>Bridgly SMS Gateway v5.2</h1>
+                <h1>Bridgly SMS Gateway v5.3</h1>
             </div>
             <div class="header-controls">
                 <div class="status-badge">
@@ -1363,6 +1363,19 @@
                                 🔄 Refresh
                             </button>
                         </div>
+                    </div>
+                    <!-- Telegram Midnight Report Mini Widget -->
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 4px; padding: 0.4rem 0.6rem; font-size: 11px; margin-bottom: 0.75rem;">
+                        <label
+                            style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer; color: var(--text);">
+                            <input type="checkbox" id="telegram-report-enabled" checked style="cursor: pointer;">
+                            <span>✈️ <strong>Telegram Daily Report</strong> (Auto-Send at 00:00)</span>
+                        </label>
+                        <button id="send-test-telegram-btn" class="btn btn-secondary"
+                            style="padding: 0.2rem 0.5rem; font-size: 10px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">
+                            🚀 Send Test Report
+                        </button>
                     </div>
                     <div id="stats-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
                         <div class="no-data">Loading statistics...</div>
@@ -1642,6 +1655,7 @@
                         activeDeviceQueues = data.activeDeviceQueues || 0;
                         queueBreakdown = data.queueBreakdown || [];
                         rateInput.value = globalSettings.globalSendRate;
+                        updateTelegramUIFromSettings();
                         updatePhonesUI();
                         updateQueueUI(data.queueLength);
                         fetchMessagesFromServer();
@@ -1703,6 +1717,7 @@
                     } else if (data.type === 'settings_update') {
                         globalSettings = data.settings;
                         rateInput.value = globalSettings.globalSendRate;
+                        updateTelegramUIFromSettings();
                         appendLog(`Send rate updated globally: ${globalSettings.globalSendRate} msg/min`);
                         updateBulkInfoUI(currentQueueLength);
                     }
@@ -1892,6 +1907,53 @@
         }
 
 
+
+        function updateTelegramUIFromSettings() {
+            const enabledToggle = document.getElementById('telegram-report-enabled');
+            if (enabledToggle) enabledToggle.checked = globalSettings.telegramDailyReportEnabled !== false;
+        }
+
+        const telegramReportEnabledToggle = document.getElementById('telegram-report-enabled');
+        if (telegramReportEnabledToggle) {
+            telegramReportEnabledToggle.addEventListener('change', () => {
+                const enabled = telegramReportEnabledToggle.checked;
+                fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramDailyReportEnabled: enabled })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        appendLog(`Telegram midnight report auto-send ${enabled ? 'enabled' : 'disabled'}.`);
+                    });
+            });
+        }
+
+        const sendTestTelegramBtn = document.getElementById('send-test-telegram-btn');
+        if (sendTestTelegramBtn) {
+            sendTestTelegramBtn.addEventListener('click', () => {
+                appendLog('Sending test daily report to Telegram...');
+                sendTestTelegramBtn.disabled = true;
+                fetch('/api/telegram/test', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            appendLog('Telegram test daily report sent successfully! ✅');
+                            alert('Test daily report sent to Telegram group successfully!');
+                        } else {
+                            appendLog(`Failed to send Telegram test report: ${data.error}`, true);
+                            alert(`Failed to send test report: ${data.error}`);
+                        }
+                    })
+                    .catch(err => {
+                        appendLog(`Error sending report: ${err.message}`, true);
+                        alert(`Error sending report: ${err.message}`);
+                    })
+                    .finally(() => {
+                        sendTestTelegramBtn.disabled = false;
+                    });
+            });
+        }
 
         // Update send rate settings
         saveRateBtn.addEventListener('click', () => {

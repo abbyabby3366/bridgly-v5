@@ -104,17 +104,27 @@ const messageHistory = [];
 const webClients = new Set();
 
 // In-memory state (synced with MongoDB)
-let settings = { globalSendRate: 10 };
+let settings = {
+    globalSendRate: 10,
+    telegramBotToken: '8922084689:AAEUFlhKHdOJ5aYzJVm06k7jjiDC5Ilb10w',
+    telegramChatId: '-1003609274977',
+    telegramThreadId: '4',
+    telegramDailyReportEnabled: true
+};
 
 async function loadPersistence() {
     if (!db) return;
     try {
         const settingsDoc = await db.collection('settings').findOne({ _id: 'global' });
         if (settingsDoc) {
-            settings = { globalSendRate: settingsDoc.globalSendRate || 10 };
+            settings = {
+                globalSendRate: settingsDoc.globalSendRate || 10,
+                telegramBotToken: settingsDoc.telegramBotToken || '8922084689:AAEUFlhKHdOJ5aYzJVm06k7jjiDC5Ilb10w',
+                telegramChatId: settingsDoc.telegramChatId || '-1003609274977',
+                telegramThreadId: settingsDoc.telegramThreadId || '4',
+                telegramDailyReportEnabled: settingsDoc.telegramDailyReportEnabled !== undefined ? settingsDoc.telegramDailyReportEnabled : true
+            };
         }
-
-
 
         // Load recent message history into memory
         const historyDocs = await db.collection('message_history')
@@ -160,12 +170,158 @@ async function saveSettings() {
     try {
         await db.collection('settings').updateOne(
             { _id: 'global' },
-            { $set: { globalSendRate: settings.globalSendRate } },
+            { $set: settings },
             { upsert: true }
         );
     } catch (e) {
         console.error('Error saving settings to MongoDB:', e.message);
     }
+}
+
+// ──────────────────────────────────────────
+// Telegram Daily Midnight Report Logic
+// ──────────────────────────────────────────
+
+async function generateDailyReportText(targetDate) {
+    if (!db) throw new Error('Database not connected');
+
+    const col = db.collection('message_history');
+    
+    let filterQuery = {};
+    let dateHeader = '';
+
+    if (targetDate) {
+        dateHeader = targetDate;
+        filterQuery = { createdAt: { $regex: `^${targetDate}` } };
+    } else {
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        filterQuery = { createdAt: { $gte: yesterday.toISOString() } };
+        dateHeader = yesterday.toISOString().split('T')[0];
+    }
+
+    const total = await col.countDocuments(filterQuery);
+
+    const statusStats = await col.aggregate([
+        { $match: filterQuery },
+        { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]).toArray();
+
+    let delivered = 0, sent = 0, failed = 0, pending = 0;
+    statusStats.forEach(s => {
+        if (s._id === 'delivered') delivered = s.count;
+        else if (s._id === 'sent') sent = s.count;
+        else if (s._id === 'failed') failed = s.count;
+        else if (s._id === 'pending') pending = s.count;
+    });
+
+    const uniqueRecipientsResult = await col.aggregate([
+        { $match: { ...filterQuery, to: { $ne: null } } },
+        { $group: { _id: "$to" } },
+        { $count: "count" }
+    ]).toArray();
+    const uniqueRecipients = uniqueRecipientsResult.length > 0 ? uniqueRecipientsResult[0].count : 0;
+
+    const deliveredPct = total > 0 ? ((delivered / total) * 100).toFixed(1) : '0.0';
+    const sentPct = total > 0 ? ((sent / total) * 100).toFixed(1) : '0.0';
+    const failedPct = total > 0 ? ((failed / total) * 100).toFixed(1) : '0.0';
+
+    return `📊 [Bridgly SMS] Daily Report — ${dateHeader}\n` +
+           `• Total SMS Sent: ${total.toLocaleString()}\n` +
+           `• Delivered: ${delivered.toLocaleString()} (${deliveredPct}%) ✅\n` +
+           `• Sent (No DR): ${sent.toLocaleString()} (${sentPct}%) 🟡\n` +
+           `• Failed: ${failed.toLocaleString()} (${failedPct}%) ❌\n` +
+           `• Unique Recipients: ${uniqueRecipients.toLocaleString()}`;
+}
+
+async function sendTelegramReport(customText) {
+    const token = settings.telegramBotToken || '8922084689:AAEUFlhKHdOJ5aYzJVm06k7jjiDC5Ilb10w';
+    let chatId = settings.telegramChatId || '-1003609274977';
+    let threadId = settings.telegramThreadId || '4';
+
+    const text = customText || (await generateDailyReportText());
+
+    const body = {
+        chat_id: chatId,
+        text: text
+    };
+    if (threadId && threadId.trim() !== '') {
+        body.message_thread_id = parseInt(threadId);
+    }
+
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+    if (!data.ok) {
+        throw new Error(data.description || 'Failed to send message via Telegram API');
+    }
+    return data;
+}
+
+async function discoverTelegramChat() {
+    const token = settings.telegramBotToken;
+    if (!token) {
+        throw new Error('Telegram Bot Token is not configured');
+    }
+
+    const res = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
+    const data = await res.json();
+
+    if (!data.ok || !data.result) {
+        throw new Error(data.description || 'Failed to fetch Telegram updates');
+    }
+
+    const updates = data.result;
+    for (let i = updates.length - 1; i >= 0; i--) {
+        const u = updates[i];
+        const msg = u.message || u.channel_post || u.edited_message;
+        if (msg && msg.chat) {
+            const chatId = msg.chat.id.toString();
+            const threadId = msg.message_thread_id ? msg.message_thread_id.toString() : '';
+            const chatTitle = msg.chat.title || msg.chat.first_name || 'Group Chat';
+
+            settings.telegramChatId = chatId;
+            settings.telegramThreadId = threadId;
+            await saveSettings();
+
+            return {
+                chatId,
+                threadId,
+                chatTitle,
+                found: true
+            };
+        }
+    }
+
+    return { found: false, message: 'No chat updates found. Please send a message in your Telegram group topic first.' };
+}
+
+let lastReportDate = '';
+function startMidnightScheduler() {
+    setInterval(async () => {
+        if (!settings.telegramDailyReportEnabled) return;
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const todayStr = now.toISOString().split('T')[0];
+
+        if (hours === 0 && minutes === 0 && lastReportDate !== todayStr) {
+            lastReportDate = todayStr;
+            try {
+                console.log(`[Midnight Scheduler] Triggering Telegram daily report for ${todayStr}...`);
+                const reportText = await generateDailyReportText();
+                await sendTelegramReport(reportText);
+                addLog(`[Telegram] Daily midnight report successfully sent to Telegram.`);
+            } catch (err) {
+                console.error(`[Telegram Error] Midnight report failed:`, err.message);
+                addLog(`[Telegram Error] Daily midnight report failed: ${err.message}`);
+            }
+        }
+    }, 30000);
 }
 
 async function saveMessage(record) {
@@ -736,19 +892,49 @@ app.get('/api/settings', (req, res) => {
     res.json(settings);
 });
 
-app.post('/api/settings', (req, res) => {
-    const { globalSendRate } = req.body;
+app.post('/api/settings', async (req, res) => {
+    const { globalSendRate, telegramBotToken, telegramChatId, telegramThreadId, telegramDailyReportEnabled } = req.body;
     if (globalSendRate !== undefined) {
         const rate = parseInt(globalSendRate);
         if (isNaN(rate) || rate <= 0) {
             return res.status(400).json({ error: 'Invalid globalSendRate' });
         }
         settings.globalSendRate = rate;
-        saveSettings();
-        addLog(`Global sending rate updated to ${rate} msg/min`);
-        broadcastToWeb({ type: 'settings_update', settings });
     }
+    if (telegramBotToken !== undefined) settings.telegramBotToken = telegramBotToken.trim();
+    if (telegramChatId !== undefined) settings.telegramChatId = telegramChatId.toString().trim();
+    if (telegramThreadId !== undefined) settings.telegramThreadId = telegramThreadId.toString().trim();
+    if (telegramDailyReportEnabled !== undefined) settings.telegramDailyReportEnabled = !!telegramDailyReportEnabled;
+
+    await saveSettings();
+    addLog(`Settings updated.`);
+    broadcastToWeb({ type: 'settings_update', settings });
     res.json({ success: true, settings });
+});
+
+// Telegram Daily Report APIs
+app.post('/api/telegram/test', async (req, res) => {
+    try {
+        const reportText = await generateDailyReportText();
+        const result = await sendTelegramReport(reportText);
+        addLog(`[Telegram] Test daily report sent successfully.`);
+        res.json({ success: true, result, text: reportText });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/telegram/discover', async (req, res) => {
+    try {
+        const result = await discoverTelegramChat();
+        if (result.found) {
+            addLog(`[Telegram] Auto-discovered Chat ID (${result.chatId}) and Thread ID (${result.threadId || 'Main'}).`);
+            broadcastToWeb({ type: 'settings_update', settings });
+        }
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // Clear Message Transmission Logs
@@ -1089,6 +1275,7 @@ const PORT = process.env.PORT || 8932;
 async function startServer() {
     await connectMongo();
     await loadPersistence();
+    startMidnightScheduler();
     
     server.listen(PORT, '0.0.0.0', () => {
         console.log(`Bridgly SMS server is running on http://localhost:${PORT}`);
