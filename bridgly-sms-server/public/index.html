@@ -1108,7 +1108,7 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <h1>Bridgly SMS Gateway v5.1.4.2</h1>
+                <h1>Bridgly SMS Gateway v5.2</h1>
             </div>
             <div class="header-controls">
                 <div class="status-badge">
@@ -1206,7 +1206,7 @@
                             <span class="queue-widget-desc" id="queue-desc">Remaining: 0 messages</span>
                         </div>
                         <button id="clear-queue-btn" class="btn btn-danger"
-                            style="padding: 0.3rem 0.5rem; font-size: 11px;">Cancel Send</button>
+                            style="padding: 0.3rem 0.5rem; font-size: 11px;">Cancel All</button>
                     </div>
 
                     <div class="form-group">
@@ -2067,13 +2067,17 @@
         });
 
         clearQueueBtn.addEventListener('click', () => {
-            if (!confirm('Are you sure you want to clear the pending bulk queue?')) return;
+            if (!confirm('Are you sure you want to cancel all bulk message queues across all devices?')) return;
             clearQueueBtn.disabled = true;
-            fetch('/api/clear-queue', { method: 'POST' })
+            fetch('/api/clear-queue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        appendLog(`Bulk sending queue cleared successfully.`);
+                        appendLog(`All bulk sending queues cleared successfully.`);
                     }
                 })
                 .catch(err => appendLog(`Network error clearing queue: ${err.message}`, true))
@@ -2081,6 +2085,22 @@
                     clearQueueBtn.disabled = false;
                 });
         });
+
+        window.cancelDeviceQueue = function (senderKey, senderDisplay) {
+            if (!confirm(`Are you sure you want to cancel the pending queue for device ${senderDisplay || senderKey}?`)) return;
+            fetch('/api/clear-queue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ senderKey: senderKey, sender: senderDisplay })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        appendLog(`Cleared ${data.count} queued message(s) for device ${senderDisplay || senderKey}.`);
+                    }
+                })
+                .catch(err => appendLog(`Network error clearing queue for device ${senderDisplay || senderKey}: ${err.message}`, true));
+        };
 
         function updateQueueUI(length) {
             currentQueueLength = length;
@@ -2166,9 +2186,10 @@
                                 <span style="color: var(--accent); font-weight: 600;">📱</span>
                                 <span style="color: var(--text); font-weight: 600;">${esc(q.sender)}</span>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 10px;">
+                            <div style="display: flex; align-items: center; gap: 0.6rem; font-size: 10px;">
                                 <span style="color: var(--warning);">${q.remaining} msg left</span>
                                 <span style="color: var(--text-muted);">~${qDuration}</span>
+                                <button class="btn btn-danger" onclick="cancelDeviceQueue('${esc(q.senderKey || q.sender)}', '${esc(q.sender)}')" style="padding: 0.15rem 0.4rem; font-size: 10px; line-height: 1; border-radius: 3px; cursor: pointer;" title="Cancel queue for this device">Cancel</button>
                             </div>
                         </div>`;
                     }).join('');

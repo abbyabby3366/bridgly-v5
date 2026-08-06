@@ -235,6 +235,7 @@ function getQueueBreakdown() {
             const displaySender = queue.messages[0].sender || senderKey;
             breakdown.push({
                 sender: displaySender,
+                senderKey: senderKey,
                 remaining: queue.messages.length
             });
         }
@@ -846,8 +847,54 @@ app.post('/api/upload-csv', async (req, res) => {
     }
 });
 
-// Clear Bulk Queue
+// Clear Bulk Queue (All or Specific Device)
 app.post('/api/clear-queue', async (req, res) => {
+    const { senderKey, sender } = req.body || {};
+    const targetKey = senderKey || (sender ? normalizePhoneNumber(sender) : null);
+
+    if (targetKey) {
+        let removedCount = 0;
+        let matchedKey = null;
+
+        if (deviceQueues.has(targetKey)) {
+            matchedKey = targetKey;
+        } else if (sender) {
+            const norm = normalizePhoneNumber(sender);
+            if (deviceQueues.has(norm)) {
+                matchedKey = norm;
+            }
+        }
+
+        if (!matchedKey) {
+            for (const [sKey, queue] of deviceQueues.entries()) {
+                if (queue.messages.length > 0 && (queue.messages[0].sender === sender || sKey === targetKey)) {
+                    matchedKey = sKey;
+                    break;
+                }
+            }
+        }
+
+        if (matchedKey && deviceQueues.has(matchedKey)) {
+            removedCount = deviceQueues.get(matchedKey).messages.length;
+            deviceQueues.delete(matchedKey);
+        }
+
+        if (db) {
+            try {
+                const query = { $or: [{ senderKey: targetKey }] };
+                if (matchedKey) query.$or.push({ senderKey: matchedKey });
+                if (sender) query.$or.push({ sender: sender });
+                await db.collection('bulk_queue').deleteMany(query);
+            } catch (e) {
+                console.error('Error clearing bulk queue for device from MongoDB:', e.message);
+            }
+        }
+
+        addLog(`Bulk SMS Queue cleared for device (${sender || targetKey}). ${removedCount} messages removed.`);
+        broadcastQueueStatus();
+        return res.json({ success: true, count: removedCount, sender: sender || targetKey });
+    }
+
     const originalCount = getQueueLength();
     deviceQueues.clear();
     // Clear from MongoDB
@@ -858,7 +905,7 @@ app.post('/api/clear-queue', async (req, res) => {
             console.error('Error clearing bulk queue from MongoDB:', e.message);
         }
     }
-    addLog(`Bulk SMS Queue cleared. ${originalCount} messages removed.`);
+    addLog(`Bulk SMS Queue cleared (all devices). ${originalCount} messages removed.`);
     broadcastQueueStatus();
     res.json({ success: true, count: originalCount });
 });
