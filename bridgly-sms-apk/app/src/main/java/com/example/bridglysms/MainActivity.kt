@@ -118,7 +118,7 @@ class MainActivity : ComponentActivity() {
         ContextCompat.registerReceiver(this, directSmsDeliveredReceiver, filterDelivered, ContextCompat.RECEIVER_EXPORTED)
 
         val sharedPref = getSharedPreferences("BridglySmsConfig", Context.MODE_PRIVATE)
-        val initialUrl = sharedPref.getString("server_url", "wss://bridgly-v5.onrender.com") ?: "wss://bridgly-v5.onrender.com"
+        val initialUrl = sharedPref.getString("server_url", "wss://bridgly-v5.io7.my") ?: "wss://bridgly-v5.io7.my"
 
         if (!sharedPref.contains("device_id")) {
             sharedPref.edit().putString("device_id", java.util.UUID.randomUUID().toString().take(8)).apply()
@@ -855,7 +855,7 @@ fun SmsGatewayDashboard(
                             onSaveUrl(it)
                         },
                         label = { Text("Server WS URL") },
-                        placeholder = { Text("wss://bridgly-v5.onrender.com") },
+                        placeholder = { Text("wss://bridgly-v5.io7.my") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
