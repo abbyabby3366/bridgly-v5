@@ -23,10 +23,14 @@ async function connectMongo() {
         try {
             await db.collection('message_history').createIndex({ createdAt: -1 });
             await db.collection('message_history').createIndex({ status: 1 });
-            await db.collection('message_history').createIndex({ createdAt: -1, status: 1 });
             await db.collection('message_history').createIndex({ status: 1, createdAt: -1 });
-            await db.collection('message_history').createIndex({ deviceModel: 1, createdAt: -1 });
             await db.collection('message_history').createIndex({ sender: 1, createdAt: -1 });
+            await db.collection('message_history').createIndex({ sender: 1, status: 1, createdAt: -1 });
+            await db.collection('message_history').createIndex({ status: 1, sender: 1, createdAt: -1 });
+            await db.collection('message_history').createIndex({ to: 1, createdAt: -1 });
+            await db.collection('message_history').createIndex({ to: 1, status: 1 });
+            await db.collection('message_history').createIndex({ id: 1 });
+            await db.collection('message_history').createIndex({ deviceModel: 1, createdAt: -1 });
             await db.collection('bulk_queue').createIndex({ senderKey: 1 });
             await db.collection('bulk_queue').createIndex({ createdAt: 1 });
         } catch (idxErr) {
@@ -51,6 +55,42 @@ function normalizePhoneNumber(num) {
     if (!num) return '';
     const digits = num.toString().replace(/\D/g, '');
     return digits.length >= 9 ? digits.slice(-9) : digits;
+}
+
+// Generate common phone number format variants for index-friendly lookups
+function getPhoneNumberVariants(num) {
+    if (!num) return [];
+    const trimmed = num.toString().trim();
+    const digits = trimmed.replace(/\D/g, '');
+    const variants = new Set([trimmed]);
+    if (digits) {
+        variants.add(digits);
+        variants.add(`+${digits}`);
+        if (digits.startsWith('60') && digits.length > 2) {
+            variants.add('0' + digits.slice(2)); // 011...
+            variants.add(digits.slice(2));       // 11...
+            variants.add(`+${digits}`);
+        } else if (digits.startsWith('0') && digits.length > 1) {
+            variants.add('60' + digits.slice(1));
+            variants.add('+60' + digits.slice(1));
+            variants.add(digits.slice(1));
+        }
+        if (digits.length >= 9) {
+            const suffix9 = digits.slice(-9);
+            variants.add(suffix9);
+            variants.add(`0${suffix9}`);
+            variants.add(`60${suffix9}`);
+            variants.add(`+60${suffix9}`);
+        }
+        if (digits.length >= 10) {
+            const suffix10 = digits.slice(-10);
+            variants.add(suffix10);
+            variants.add(`0${suffix10}`);
+            variants.add(`60${suffix10}`);
+            variants.add(`+60${suffix10}`);
+        }
+    }
+    return Array.from(variants);
 }
 
 // Parse CSV text supporting quoted values and commas
@@ -1219,43 +1259,59 @@ app.get('/api/messages', async (req, res) => {
         return res.status(503).json({ error: 'Database not connected' });
     }
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 25;
-        const search = req.query.search || '';
-        const sender = req.query.sender || '';
-        const status = req.query.status || '';
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.max(1, parseInt(req.query.limit) || 25);
+        const search = req.query.search ? req.query.search.trim() : '';
+        const sender = req.query.sender ? req.query.sender.trim() : '';
+        const status = req.query.status ? req.query.status.trim() : '';
         
         const filter = {};
         const conditions = [];
 
         if (search) {
-            const cleanSearch = search.trim();
-            const searchRegex = new RegExp(cleanSearch, 'i');
-            conditions.push({
-                $or: [
-                    { id: searchRegex },
-                    { type: searchRegex },
-                    { sender: searchRegex },
-                    { to: searchRegex },
-                    { message: searchRegex },
-                    { status: searchRegex },
-                    { deviceModel: searchRegex },
-                    { error: searchRegex }
-                ]
-            });
+            const digitsOnly = search.replace(/\D/g, '');
+            // Fast indexed path for phone numbers
+            if (digitsOnly.length >= 7 && (search.startsWith('+') || /^\d+$/.test(search))) {
+                const searchVariants = getPhoneNumberVariants(search);
+                conditions.push({
+                    $or: [
+                        { to: { $in: searchVariants } },
+                        { sender: { $in: searchVariants } },
+                        { id: search }
+                    ]
+                });
+            } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(search)) {
+                // Exact UUID match
+                conditions.push({ id: search });
+            } else {
+                const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const searchRegex = new RegExp(escaped, 'i');
+                conditions.push({
+                    $or: [
+                        { id: searchRegex },
+                        { type: searchRegex },
+                        { sender: searchRegex },
+                        { to: searchRegex },
+                        { message: searchRegex },
+                        { status: searchRegex },
+                        { deviceModel: searchRegex },
+                        { error: searchRegex }
+                    ]
+                });
+            }
         }
 
         if (sender) {
-            // Normalize: strip non-digits and match on last 9 digits to handle format differences (+601... vs 601...)
-            const senderDigits = sender.trim().replace(/\D/g, '');
-            const senderSuffix = senderDigits.length >= 9 ? senderDigits.slice(-9) : senderDigits;
-            if (senderSuffix) {
-                conditions.push({ sender: { $regex: senderSuffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$' } });
+            const variants = getPhoneNumberVariants(sender);
+            if (variants.length > 0) {
+                conditions.push({ sender: { $in: variants } });
+            } else {
+                conditions.push({ sender: sender });
             }
         }
 
         if (status) {
-            conditions.push({ status: status.trim() });
+            conditions.push({ status: status });
         }
 
         if (conditions.length > 0) {
@@ -1267,13 +1323,20 @@ app.get('/api/messages', async (req, res) => {
         }
         
         const skip = (page - 1) * limit;
-        const total = await db.collection('message_history').countDocuments(filter);
-        const messages = await db.collection('message_history')
+        const isFilterEmpty = Object.keys(filter).length === 0;
+
+        const countPromise = isFilterEmpty
+            ? db.collection('message_history').estimatedDocumentCount()
+            : db.collection('message_history').countDocuments(filter);
+
+        const findPromise = db.collection('message_history')
             .find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .toArray();
+
+        const [total, messages] = await Promise.all([countPromise, findPromise]);
             
         res.json({
             messages,

@@ -598,6 +598,51 @@
             display: none;
         }
 
+        .table-wrap {
+            position: relative;
+            min-height: 120px;
+        }
+
+        .table-loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(2px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 6px;
+            pointer-events: all;
+        }
+
+        .table-loading-overlay.active {
+            display: flex;
+        }
+
+        .table-loading-spinner {
+            display: inline-block;
+            width: 26px;
+            height: 26px;
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            border-top-color: var(--info, #0ea5e9);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
         /* Badges */
         .badge {
             display: inline-flex;
@@ -1112,6 +1157,7 @@
             gap: 8px;
             pointer-events: none;
         }
+
         .toast-msg {
             padding: 10px 16px;
             border-radius: 6px;
@@ -1128,17 +1174,27 @@
             align-items: center;
             gap: 8px;
         }
+
         .toast-msg.toast-error {
             background: rgba(185, 28, 28, 0.95);
             border-color: rgba(239, 68, 68, 0.4);
         }
+
         .toast-msg.toast-success {
             background: rgba(16, 115, 68, 0.95);
             border-color: rgba(34, 197, 94, 0.4);
         }
+
         @keyframes toastSlideIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
@@ -1148,7 +1204,7 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <h1>Bridgly SMS Gateway v5.4.3</h1>
+                <h1>Bridgly SMS Gateway v5.4.4</h1>
             </div>
             <div class="header-controls">
                 <div class="status-badge">
@@ -1485,390 +1541,419 @@
                                 style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin: 0; white-space: nowrap; cursor: pointer;">Show
                                 Action Column</label>
                         </div>
-                    </div>
-                    <div class="table-wrap">
-                        <table id="history-table" class="hide-action-column">
-                            <thead>
-                                <tr>
-                                    <th style="width: 130px;">Phone</th>
-                                    <th style="width: 70px;">Type</th>
-                                    <th style="width: 100px;">Sender</th>
-                                    <th style="width: 100px;">Recipient</th>
-                                    <th style="width: 50px;">SIM</th>
-                                    <th>Message</th>
-                                    <th style="width: 110px;">Status</th>
-                                    <th style="width: 140px;">Date / Time</th>
-                                    <th class="action-column" style="width: 70px; text-align: right;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="history-body">
-                                <tr>
-                                    <td colspan="9" class="no-data">No messages processed.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- Pagination Footer -->
-                    <div class="pagination-footer">
-                        <div id="pagination-info" class="pagination-info">Showing 0-0 of 0 messages</div>
-                        <div class="pagination-controls">
-                            <button id="prev-page-btn" class="pagination-btn" disabled>&larr; Prev</button>
-                            <span id="page-num-display" class="pagination-current">Page 1 of 1</span>
-                            <button id="next-page-btn" class="pagination-btn" disabled>Next &rarr;</button>
-                            <select id="page-size-select" class="page-size-select" style="margin-left: 0.5rem;">
-                                <option value="10">10 / page</option>
-                                <option value="25" selected>25 / page</option>
-                                <option value="50">50 / page</option>
-                                <option value="100">100 / page</option>
-                            </select>
+                        <div class="table-wrap">
+                            <div id="history-loading-overlay" class="table-loading-overlay">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                                    <div class="table-loading-spinner"></div>
+                                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Loading
+                                        logs...</span>
+                                </div>
+                            </div>
+                            <table id="history-table" class="hide-action-column">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 130px;">Phone</th>
+                                        <th style="width: 70px;">Type</th>
+                                        <th style="width: 100px;">Sender</th>
+                                        <th style="width: 100px;">Recipient</th>
+                                        <th style="width: 50px;">SIM</th>
+                                        <th>Message</th>
+                                        <th style="width: 110px;">Status</th>
+                                        <th style="width: 140px;">Date / Time</th>
+                                        <th class="action-column" style="width: 70px; text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-body">
+                                    <tr>
+                                        <td colspan="9" class="no-data">No messages processed.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination Footer -->
+                        <div class="pagination-footer">
+                            <div id="pagination-info" class="pagination-info">Showing 0-0 of 0 messages</div>
+                            <div class="pagination-controls">
+                                <button id="prev-page-btn" class="pagination-btn" disabled>&larr; Prev</button>
+                                <span id="page-num-display" class="pagination-current">Page 1 of 1</span>
+                                <button id="next-page-btn" class="pagination-btn" disabled>Next &rarr;</button>
+                                <select id="page-size-select" class="page-size-select" style="margin-left: 0.5rem;">
+                                    <option value="10">10 / page</option>
+                                    <option value="25" selected>25 / page</option>
+                                    <option value="50">50 / page</option>
+                                    <option value="100">100 / page</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Settings Dialog -->
-    <dialog id="settings-dialog" class="settings-modal" closedby="any">
-        <div class="settings-dialog-header">
-            <h3>Settings</h3>
-            <button class="close-btn" id="close-settings-btn" aria-label="Close settings">&times;</button>
-        </div>
-        <div class="settings-dialog-body">
-            <div class="form-group">
-                <label for="global-rate">Send Rate (msg/min)</label>
-                <div style="display:flex; gap:0.5rem; align-items:center;">
-                    <input type="number" id="global-rate" class="form-input"
-                        style="width: 80px; text-align: center; padding: 0.45rem;" value="10" min="1">
-                    <button id="save-rate-btn" class="btn">Save</button>
-                </div>
+        <!-- Settings Dialog -->
+        <dialog id="settings-dialog" class="settings-modal" closedby="any">
+            <div class="settings-dialog-header">
+                <h3>Settings</h3>
+                <button class="close-btn" id="close-settings-btn" aria-label="Close settings">&times;</button>
             </div>
-
-            <div class="form-group" style="margin-top: 0.5rem;">
-                <label>WebSocket URL</label>
-                <div style="display:flex; gap:0.5rem; align-items:center;">
-                    <div
-                        style="flex:1; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border); border-radius: 4px; padding: 0.45rem 0.6rem; overflow-x: auto; white-space: nowrap; font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--text); line-height: 1.2;">
-                        <span id="ws-url-display"></span>
+            <div class="settings-dialog-body">
+                <div class="form-group">
+                    <label for="global-rate">Send Rate (msg/min)</label>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <input type="number" id="global-rate" class="form-input"
+                            style="width: 80px; text-align: center; padding: 0.45rem;" value="10" min="1">
+                        <button id="save-rate-btn" class="btn">Save</button>
                     </div>
-                    <button id="copy-ws-btn" class="btn btn-secondary" style="padding: 0.45rem 0.6rem;"
-                        title="Copy to clipboard">Copy</button>
+                </div>
+
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label>WebSocket URL</label>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <div
+                            style="flex:1; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border); border-radius: 4px; padding: 0.45rem 0.6rem; overflow-x: auto; white-space: nowrap; font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--text); line-height: 1.2;">
+                            <span id="ws-url-display"></span>
+                        </div>
+                        <button id="copy-ws-btn" class="btn btn-secondary" style="padding: 0.45rem 0.6rem;"
+                            title="Copy to clipboard">Copy</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </dialog>
+        </dialog>
 
-    <!-- Client Script -->
-    <script>
-        let ws;
-        let phones = [];
-        let globalSettings = { globalSendRate: 10 };
-        let currentQueueLength = 0;
-        let activeDeviceQueues = 0;
-        let queueBreakdown = [];
-        let phoneSearchQuery = '';
-        let statsLoaded = false;
+        <!-- Client Script -->
+        <script>
+            let ws;
+            let phones = [];
+            let globalSettings = { globalSendRate: 10 };
+            let currentQueueLength = 0;
+            let activeDeviceQueues = 0;
+            let queueBreakdown = [];
+            let phoneSearchQuery = '';
+            let statsLoaded = false;
 
-        // State for backend-driven pagination and search
-        let currentPage = 1;
-        let pageSize = 25;
-        let searchQuery = '';
-        let filterSender = '';
-        let filterStatus = '';
-        let displayedMessages = [];
-        let totalMessagesCount = 0;
+            // State for backend-driven pagination and search
+            let currentPage = 1;
+            let pageSize = 25;
+            let searchQuery = '';
+            let filterSender = '';
+            let filterStatus = '';
+            let displayedMessages = [];
+            let totalMessagesCount = 0;
 
-        // Normalize phone number for comparison: strip non-digits, take last 9 digits
-        function normalizeSender(num) {
-            if (!num) return '';
-            const digits = num.toString().replace(/\D/g, '');
-            return digits.length >= 9 ? digits.slice(-9) : digits;
-        }
-
-        // State for local CSV preview pagination
-        let previewMessages = [];
-        let previewCurrentPage = 1;
-        const previewPageSize = 10;
-        let selectedCsvFiles = [];
-
-        // DOM elements
-        const statusDot = document.getElementById('status-dot');
-        const statusText = document.getElementById('status-text');
-        const rateInput = document.getElementById('global-rate');
-        const saveRateBtn = document.getElementById('save-rate-btn');
-        const devicesContainer = document.getElementById('devices-container');
-        const deviceSelect = document.getElementById('device-select');
-        const lblSim1 = document.getElementById('lbl-sim-1');
-        const lblSim2 = document.getElementById('lbl-sim-2');
-        const simRadio2 = document.getElementById('sim-slot-2');
-        const sendSingleBtn = document.getElementById('send-single-btn');
-
-        // HTML escaper to prevent XSS
-        function esc(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-
-        // Floating toast feedback
-        function showToast(text, isError = false) {
-            let container = document.getElementById('toast-container');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'toast-container';
-                document.body.appendChild(container);
+            // Normalize phone number for comparison: strip non-digits, take last 9 digits
+            function normalizeSender(num) {
+                if (!num) return '';
+                const digits = num.toString().replace(/\D/g, '');
+                return digits.length >= 9 ? digits.slice(-9) : digits;
             }
-            const toast = document.createElement('div');
-            toast.className = `toast-msg ${isError ? 'toast-error' : 'toast-success'}`;
-            toast.innerHTML = `<span>${isError ? '⚠️' : '✅'}</span> <span>${esc(text)}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(-10px)';
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
-        }
 
-        // Parse CSV text supporting quoted values and commas
-        function parseCSV(text) {
-            const lines = [];
-            let row = [];
-            let inQuotes = false;
-            let current = '';
-            for (let i = 0; i < text.length; i++) {
-                const c = text[i];
-                const next = text[i + 1];
-                if (c === '"') {
-                    if (inQuotes && next === '"') {
-                        current += '"';
-                        i++;
+            // State for local CSV preview pagination
+            let previewMessages = [];
+            let previewCurrentPage = 1;
+            const previewPageSize = 10;
+            let selectedCsvFiles = [];
+
+            // DOM elements
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            const rateInput = document.getElementById('global-rate');
+            const saveRateBtn = document.getElementById('save-rate-btn');
+            const devicesContainer = document.getElementById('devices-container');
+            const deviceSelect = document.getElementById('device-select');
+            const lblSim1 = document.getElementById('lbl-sim-1');
+            const lblSim2 = document.getElementById('lbl-sim-2');
+            const simRadio2 = document.getElementById('sim-slot-2');
+            const sendSingleBtn = document.getElementById('send-single-btn');
+
+            // HTML escaper to prevent XSS
+            function esc(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // Floating toast feedback
+            function showToast(text, isError = false) {
+                let container = document.getElementById('toast-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'toast-container';
+                    document.body.appendChild(container);
+                }
+                const toast = document.createElement('div');
+                toast.className = `toast-msg ${isError ? 'toast-error' : 'toast-success'}`;
+                toast.innerHTML = `<span>${isError ? '⚠️' : '✅'}</span> <span>${esc(text)}</span>`;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-10px)';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3500);
+            }
+
+            // Parse CSV text supporting quoted values and commas
+            function parseCSV(text) {
+                const lines = [];
+                let row = [];
+                let inQuotes = false;
+                let current = '';
+                for (let i = 0; i < text.length; i++) {
+                    const c = text[i];
+                    const next = text[i + 1];
+                    if (c === '"') {
+                        if (inQuotes && next === '"') {
+                            current += '"';
+                            i++;
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (c === ',' && !inQuotes) {
+                        row.push(current.trim());
+                        current = '';
+                    } else if ((c === '\r' || c === '\n') && !inQuotes) {
+                        if (c === '\r' && next === '\n') {
+                            i++;
+                        }
+                        row.push(current.trim());
+                        if (row.some(x => x !== '')) {
+                            lines.push(row);
+                        }
+                        row = [];
+                        current = '';
                     } else {
-                        inQuotes = !inQuotes;
+                        current += c;
                     }
-                } else if (c === ',' && !inQuotes) {
-                    row.push(current.trim());
-                    current = '';
-                } else if ((c === '\r' || c === '\n') && !inQuotes) {
-                    if (c === '\r' && next === '\n') {
-                        i++;
-                    }
+                }
+                if (current !== '' || row.length > 0) {
                     row.push(current.trim());
                     if (row.some(x => x !== '')) {
                         lines.push(row);
                     }
-                    row = [];
-                    current = '';
-                } else {
-                    current += c;
                 }
+                return lines;
             }
-            if (current !== '' || row.length > 0) {
-                row.push(current.trim());
-                if (row.some(x => x !== '')) {
-                    lines.push(row);
+
+            // Format relative time for heartbeats
+            function formatRelativeTime(dateInput) {
+                if (!dateInput) return 'Never';
+                const now = new Date();
+                const date = new Date(dateInput);
+                const diffMs = now - date;
+                const diffSecs = Math.floor(diffMs / 1000);
+                const diffMins = Math.floor(diffSecs / 60);
+                const diffHours = Math.floor(diffMins / 60);
+
+                if (diffSecs < 10) {
+                    return "just now";
                 }
+                if (diffSecs < 60) {
+                    return `${diffSecs} seconds ago`;
+                }
+                if (diffMins < 60) {
+                    return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+                }
+                if (diffHours < 24) {
+                    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                }
+                return date.toLocaleString();
             }
-            return lines;
-        }
 
-        // Format relative time for heartbeats
-        function formatRelativeTime(dateInput) {
-            if (!dateInput) return 'Never';
-            const now = new Date();
-            const date = new Date(dateInput);
-            const diffMs = now - date;
-            const diffSecs = Math.floor(diffMs / 1000);
-            const diffMins = Math.floor(diffSecs / 60);
-            const diffHours = Math.floor(diffMins / 60);
+            // Tab switching
+            function switchTab(tabId, btn) {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
 
-            if (diffSecs < 10) {
-                return "just now";
+                btn.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
             }
-            if (diffSecs < 60) {
-                return `${diffSecs} seconds ago`;
-            }
-            if (diffMins < 60) {
-                return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-            }
-            if (diffHours < 24) {
-                return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-            }
-            return date.toLocaleString();
-        }
 
-        // Tab switching
-        function switchTab(tabId, btn) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            // Connect WebSocket
+            function connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}`;
+                ws = new WebSocket(wsUrl);
 
-            btn.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
-        }
+                ws.onopen = () => {
+                    ws.send(JSON.stringify({ action: 'dashboard_connect' }));
+                    appendLog('WebSocket connection to server established.');
+                };
 
-        // Connect WebSocket
-        function connect() {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}`;
-            ws = new WebSocket(wsUrl);
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
 
-            ws.onopen = () => {
-                ws.send(JSON.stringify({ action: 'dashboard_connect' }));
-                appendLog('WebSocket connection to server established.');
-            };
+                        if (data.type === 'init') {
+                            phones = data.phones || [];
+                            globalSettings = data.settings || { globalSendRate: 10 };
+                            activeDeviceQueues = data.activeDeviceQueues || 0;
+                            queueBreakdown = data.queueBreakdown || [];
+                            rateInput.value = globalSettings.globalSendRate;
+                            updateTelegramUIFromSettings();
+                            updatePhonesUI();
+                            updateQueueUI(data.queueLength);
+                            fetchMessagesFromServer();
+                        } else if (data.type === 'phones_list') {
+                            phones = data.phones || [];
+                            updatePhonesUI();
+                        } else if (data.type === 'messages_cleared') {
+                            displayedMessages = [];
+                            totalMessagesCount = 0;
+                            currentPage = 1;
+                            updateHistoryTableUI();
+                            updatePaginationUI();
+                            if (statsLoaded) fetchAndRenderStats(true);
+                        } else if (data.type === 'message_new') {
+                            const query = searchQuery.trim().toLowerCase();
+                            const matchesSearch = !query || (
+                                (data.message.type && data.message.type.toLowerCase().includes(query)) ||
+                                (data.message.sender && data.message.sender.toLowerCase().includes(query)) ||
+                                (data.message.to && data.message.to.toLowerCase().includes(query)) ||
+                                (data.message.message && data.message.message.toLowerCase().includes(query)) ||
+                                (data.message.status && data.message.status.toLowerCase().includes(query)) ||
+                                (data.message.id && data.message.id.toLowerCase().includes(query)) ||
+                                (data.message.deviceModel && data.message.deviceModel.toLowerCase().includes(query))
+                            );
 
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
+                            const matchesSender = !filterSender || (data.message.sender && normalizeSender(data.message.sender) === normalizeSender(filterSender));
+                            const matchesStatus = !filterStatus || (data.message.status && data.message.status.trim().toLowerCase() === filterStatus.trim().toLowerCase());
 
-                    if (data.type === 'init') {
-                        phones = data.phones || [];
-                        globalSettings = data.settings || { globalSendRate: 10 };
-                        activeDeviceQueues = data.activeDeviceQueues || 0;
-                        queueBreakdown = data.queueBreakdown || [];
-                        rateInput.value = globalSettings.globalSendRate;
-                        updateTelegramUIFromSettings();
-                        updatePhonesUI();
-                        updateQueueUI(data.queueLength);
-                        fetchMessagesFromServer();
-                    } else if (data.type === 'phones_list') {
-                        phones = data.phones || [];
-                        updatePhonesUI();
-                    } else if (data.type === 'messages_cleared') {
-                        displayedMessages = [];
-                        totalMessagesCount = 0;
-                        currentPage = 1;
-                        updateHistoryTableUI();
-                        updatePaginationUI();
-                        if (statsLoaded) fetchAndRenderStats(true);
-                    } else if (data.type === 'message_new') {
-                        totalMessagesCount++;
-
-                        const query = searchQuery.trim().toLowerCase();
-                        const matchesSearch = !query || (
-                            (data.message.type && data.message.type.toLowerCase().includes(query)) ||
-                            (data.message.sender && data.message.sender.toLowerCase().includes(query)) ||
-                            (data.message.to && data.message.to.toLowerCase().includes(query)) ||
-                            (data.message.message && data.message.message.toLowerCase().includes(query)) ||
-                            (data.message.status && data.message.status.toLowerCase().includes(query)) ||
-                            (data.message.id && data.message.id.toLowerCase().includes(query)) ||
-                            (data.message.deviceModel && data.message.deviceModel.toLowerCase().includes(query))
-                        );
-
-                        const matchesSender = !filterSender || (data.message.sender && normalizeSender(data.message.sender) === normalizeSender(filterSender));
-                        const matchesStatus = !filterStatus || (data.message.status && data.message.status.trim() === filterStatus.trim());
-
-                        if (currentPage === 1 && matchesSearch && matchesSender && matchesStatus) {
-                            displayedMessages.unshift(data.message);
-                            if (displayedMessages.length > pageSize) {
-                                displayedMessages.pop();
+                            if (matchesSearch && matchesSender && matchesStatus) {
+                                totalMessagesCount++;
+                                if (currentPage === 1) {
+                                    displayedMessages.unshift(data.message);
+                                    if (displayedMessages.length > pageSize) {
+                                        displayedMessages.pop();
+                                    }
+                                    updateHistoryTableUI();
+                                }
+                                updatePaginationUI();
                             }
-                            updateHistoryTableUI();
+                        } else if (data.type === 'message_update') {
+                            const idx = displayedMessages.findIndex(m => m.id === data.message.id);
+                            if (idx !== -1) {
+                                const query = searchQuery.trim().toLowerCase();
+                                const matchesSearch = !query || (
+                                    (data.message.type && data.message.type.toLowerCase().includes(query)) ||
+                                    (data.message.sender && data.message.sender.toLowerCase().includes(query)) ||
+                                    (data.message.to && data.message.to.toLowerCase().includes(query)) ||
+                                    (data.message.message && data.message.message.toLowerCase().includes(query)) ||
+                                    (data.message.status && data.message.status.toLowerCase().includes(query)) ||
+                                    (data.message.id && data.message.id.toLowerCase().includes(query)) ||
+                                    (data.message.deviceModel && data.message.deviceModel.toLowerCase().includes(query))
+                                );
+
+                                const matchesSender = !filterSender || (data.message.sender && normalizeSender(data.message.sender) === normalizeSender(filterSender));
+                                const matchesStatus = !filterStatus || (data.message.status && data.message.status.trim().toLowerCase() === filterStatus.trim().toLowerCase());
+
+                                if (matchesSearch && matchesSender && matchesStatus) {
+                                    displayedMessages[idx] = data.message;
+                                    updateHistoryTableUI();
+                                } else {
+                                    // Status changed so it no longer satisfies active filter
+                                    displayedMessages.splice(idx, 1);
+                                    if (totalMessagesCount > 0) totalMessagesCount--;
+                                    updateHistoryTableUI();
+                                    updatePaginationUI();
+                                }
+                            }
+                        } else if (data.type === 'log') {
+                            appendLog(data.log);
+                        } else if (data.type === 'queue_status') {
+                            activeDeviceQueues = data.activeDeviceQueues || 0;
+                            queueBreakdown = data.queueBreakdown || [];
+                            updateQueueUI(data.queueLength);
+                            if (data.rate) {
+                                rateInput.value = data.rate;
+                                globalSettings.globalSendRate = parseInt(data.rate);
+                                updateBulkInfoUI(data.queueLength);
+                            }
+                        } else if (data.type === 'settings_update') {
+                            globalSettings = data.settings;
+                            rateInput.value = globalSettings.globalSendRate;
+                            updateTelegramUIFromSettings();
+                            appendLog(`Send rate updated globally: ${globalSettings.globalSendRate} msg/min`);
+                            updateBulkInfoUI(currentQueueLength);
                         }
-                        updatePaginationUI();
-                    } else if (data.type === 'message_update') {
-                        const idx = displayedMessages.findIndex(m => m.id === data.message.id);
-                        if (idx !== -1) {
-                            displayedMessages[idx] = data.message;
-                            updateHistoryTableUI();
-                        }
-                    } else if (data.type === 'log') {
-                        appendLog(data.log);
-                    } else if (data.type === 'queue_status') {
-                        activeDeviceQueues = data.activeDeviceQueues || 0;
-                        queueBreakdown = data.queueBreakdown || [];
-                        updateQueueUI(data.queueLength);
-                        if (data.rate) {
-                            rateInput.value = data.rate;
-                            globalSettings.globalSendRate = parseInt(data.rate);
-                            updateBulkInfoUI(data.queueLength);
-                        }
-                    } else if (data.type === 'settings_update') {
-                        globalSettings = data.settings;
-                        rateInput.value = globalSettings.globalSendRate;
-                        updateTelegramUIFromSettings();
-                        appendLog(`Send rate updated globally: ${globalSettings.globalSendRate} msg/min`);
-                        updateBulkInfoUI(currentQueueLength);
+                    } catch (e) {
+                        console.error('Error parsing WS message:', e);
                     }
-                } catch (e) {
-                    console.error('Error parsing WS message:', e);
+                };
+
+                ws.onclose = () => {
+                    appendLog('WebSocket closed. Attempting reconnect in 5s...', true);
+                    phones = [];
+                    updatePhonesUI();
+                    setTimeout(connect, 5000);
+                };
+            }
+
+            // Append to logs
+            const logBox = document.getElementById('console-logs');
+            function appendLog(lineText, isErr = false) {
+                const div = document.createElement('div');
+                div.className = `console-line ${isErr ? 'err' : ''}`;
+                div.innerText = lineText;
+                logBox.appendChild(div);
+
+                // Limit lines
+                if (logBox.children.length > 200) {
+                    logBox.removeChild(logBox.firstChild);
                 }
-            };
-
-            ws.onclose = () => {
-                appendLog('WebSocket closed. Attempting reconnect in 5s...', true);
-                phones = [];
-                updatePhonesUI();
-                setTimeout(connect, 5000);
-            };
-        }
-
-        // Append to logs
-        const logBox = document.getElementById('console-logs');
-        function appendLog(lineText, isErr = false) {
-            const div = document.createElement('div');
-            div.className = `console-line ${isErr ? 'err' : ''}`;
-            div.innerText = lineText;
-            logBox.appendChild(div);
-
-            // Limit lines
-            if (logBox.children.length > 200) {
-                logBox.removeChild(logBox.firstChild);
-            }
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-
-        // Update Registered Phones list & controls
-        function updatePhonesUI() {
-            const query = phoneSearchQuery.trim().toLowerCase();
-            const filteredPhones = phones.filter(p => {
-                if (!query) return true;
-
-                const deviceModel = (p.deviceModel || '').toLowerCase();
-                const deviceId = (p.deviceId || '').toLowerCase();
-                const sim1Carrier = (p.sim1Carrier || '').toLowerCase();
-                const sim1Number = (p.sim1Number || '').toLowerCase();
-                const sim2Carrier = (p.sim2Carrier || '').toLowerCase();
-                const sim2Number = (p.sim2Number || '').toLowerCase();
-                const apkVersion = (p.apkVersion || '').toLowerCase();
-                const battery = p.battery !== undefined ? String(p.battery) : '';
-                const lastSeen = p.lastSeen ? new Date(p.lastSeen).toLocaleString().toLowerCase() : '';
-                const status = p.online ? 'online' : 'offline';
-
-                return deviceModel.includes(query) ||
-                    deviceId.includes(query) ||
-                    sim1Carrier.includes(query) ||
-                    sim1Number.includes(query) ||
-                    sim2Carrier.includes(query) ||
-                    sim2Number.includes(query) ||
-                    apkVersion.includes(query) ||
-                    battery.includes(query) ||
-                    lastSeen.includes(query) ||
-                    status.includes(query);
-            });
-
-            const onlineCount = phones.filter(p => p.online).length;
-            if (onlineCount > 0) {
-                statusDot.className = 'status-dot online';
-                statusText.innerText = `${onlineCount} Device(s) Online`;
-                sendSingleBtn.disabled = false;
-            } else {
-                statusDot.className = 'status-dot';
-                statusText.innerText = 'All Devices Offline';
-                sendSingleBtn.disabled = true;
+                logBox.scrollTop = logBox.scrollHeight;
             }
 
-            // Render Devices List
-            if (filteredPhones.length === 0) {
-                devicesContainer.innerHTML = `<div class="no-data">${phoneSearchQuery ? 'No matching phones.' : 'No registered phones.'}</div>`;
-            } else {
-                devicesContainer.innerHTML = filteredPhones.map(p => {
-                    const statusTextHtml = p.online
-                        ? `<span class="badge badge-delivered" style="font-size: 9px; padding: 1px 3px;">Online</span>`
-                        : `<span class="badge badge-failed" style="font-size: 9px; padding: 1px 3px;">Offline</span>`;
+            // Update Registered Phones list & controls
+            function updatePhonesUI() {
+                const query = phoneSearchQuery.trim().toLowerCase();
+                const filteredPhones = phones.filter(p => {
+                    if (!query) return true;
 
-                    const batteryText = p.battery !== undefined ? `<span style="color:var(--success)">🔋 ${p.battery}%</span>` : '';
+                    const deviceModel = (p.deviceModel || '').toLowerCase();
+                    const deviceId = (p.deviceId || '').toLowerCase();
+                    const sim1Carrier = (p.sim1Carrier || '').toLowerCase();
+                    const sim1Number = (p.sim1Number || '').toLowerCase();
+                    const sim2Carrier = (p.sim2Carrier || '').toLowerCase();
+                    const sim2Number = (p.sim2Number || '').toLowerCase();
+                    const apkVersion = (p.apkVersion || '').toLowerCase();
+                    const battery = p.battery !== undefined ? String(p.battery) : '';
+                    const lastSeen = p.lastSeen ? new Date(p.lastSeen).toLocaleString().toLowerCase() : '';
+                    const status = p.online ? 'online' : 'offline';
 
-                    return `
+                    return deviceModel.includes(query) ||
+                        deviceId.includes(query) ||
+                        sim1Carrier.includes(query) ||
+                        sim1Number.includes(query) ||
+                        sim2Carrier.includes(query) ||
+                        sim2Number.includes(query) ||
+                        apkVersion.includes(query) ||
+                        battery.includes(query) ||
+                        lastSeen.includes(query) ||
+                        status.includes(query);
+                });
+
+                const onlineCount = phones.filter(p => p.online).length;
+                if (onlineCount > 0) {
+                    statusDot.className = 'status-dot online';
+                    statusText.innerText = `${onlineCount} Device(s) Online`;
+                    sendSingleBtn.disabled = false;
+                } else {
+                    statusDot.className = 'status-dot';
+                    statusText.innerText = 'All Devices Offline';
+                    sendSingleBtn.disabled = true;
+                }
+
+                // Render Devices List
+                if (filteredPhones.length === 0) {
+                    devicesContainer.innerHTML = `<div class="no-data">${phoneSearchQuery ? 'No matching phones.' : 'No registered phones.'}</div>`;
+                } else {
+                    devicesContainer.innerHTML = filteredPhones.map(p => {
+                        const statusTextHtml = p.online
+                            ? `<span class="badge badge-delivered" style="font-size: 9px; padding: 1px 3px;">Online</span>`
+                            : `<span class="badge badge-failed" style="font-size: 9px; padding: 1px 3px;">Offline</span>`;
+
+                        const batteryText = p.battery !== undefined ? `<span style="color:var(--success)">🔋 ${p.battery}%</span>` : '';
+
+                        return `
                         <div class="device-card ${p.online ? '' : 'offline'}">
                             <div class="device-card-header">
                                 <span class="device-title">${esc(p.deviceModel)}</span>
@@ -1895,480 +1980,480 @@
                             </div>
                         </div>
                     `;
-                }).join('');
+                    }).join('');
+                }
+
+                // Update Single Send Select Menu
+                const currentlySelected = deviceSelect.value;
+                deviceSelect.innerHTML = '<option value=""></option>' +
+                    phones.filter(p => p.online).map(p =>
+                        `<option value="${p.deviceId}">${esc(p.deviceModel)}</option>`
+                    ).join('');
+
+                if (phones.some(p => p.deviceId === currentlySelected && p.online)) {
+                    deviceSelect.value = currentlySelected;
+                }
+                updateSimRadioLabels();
+                updateSenderFilterDropdown();
             }
 
-            // Update Single Send Select Menu
-            const currentlySelected = deviceSelect.value;
-            deviceSelect.innerHTML = '<option value=""></option>' +
-                phones.filter(p => p.online).map(p =>
-                    `<option value="${p.deviceId}">${esc(p.deviceModel)}</option>`
-                ).join('');
-
-            if (phones.some(p => p.deviceId === currentlySelected && p.online)) {
-                deviceSelect.value = currentlySelected;
-            }
-            updateSimRadioLabels();
-            updateSenderFilterDropdown();
-        }
-
-        // Update Sim Labels in single send form
-        function updateSimRadioLabels() {
-            const devId = deviceSelect.value;
-            let target = null;
-            if (devId) {
-                target = phones.find(p => p.deviceId === devId);
-            } else {
-                target = phones.find(p => p.online);
-            }
-
-            if (target && target.online) {
-                const sim1Num = target.sim1Number ? ` (${target.sim1Number})` : '';
-                lblSim1.innerText = `SIM 1: ${target.sim1Carrier}${sim1Num}`;
-                if (target.isDualSim) {
-                    simRadio2.disabled = false;
-                    const sim2Num = target.sim2Number ? ` (${target.sim2Number})` : '';
-                    lblSim2.innerText = `SIM 2: ${target.sim2Carrier}${sim2Num}`;
+            // Update Sim Labels in single send form
+            function updateSimRadioLabels() {
+                const devId = deviceSelect.value;
+                let target = null;
+                if (devId) {
+                    target = phones.find(p => p.deviceId === devId);
                 } else {
+                    target = phones.find(p => p.online);
+                }
+
+                if (target && target.online) {
+                    const sim1Num = target.sim1Number ? ` (${target.sim1Number})` : '';
+                    lblSim1.innerText = `SIM 1: ${target.sim1Carrier}${sim1Num}`;
+                    if (target.isDualSim) {
+                        simRadio2.disabled = false;
+                        const sim2Num = target.sim2Number ? ` (${target.sim2Number})` : '';
+                        lblSim2.innerText = `SIM 2: ${target.sim2Carrier}${sim2Num}`;
+                    } else {
+                        simRadio2.disabled = true;
+                        simRadio2.checked = false;
+                        document.getElementById('sim-slot-1').checked = true;
+                        lblSim2.innerText = 'SIM 2 (None)';
+                    }
+                } else {
+                    lblSim1.innerText = 'SIM 1';
                     simRadio2.disabled = true;
                     simRadio2.checked = false;
                     document.getElementById('sim-slot-1').checked = true;
                     lblSim2.innerText = 'SIM 2 (None)';
                 }
-            } else {
-                lblSim1.innerText = 'SIM 1';
-                simRadio2.disabled = true;
-                simRadio2.checked = false;
-                document.getElementById('sim-slot-1').checked = true;
-                lblSim2.innerText = 'SIM 2 (None)';
-            }
-        }
-
-        deviceSelect.addEventListener('change', updateSimRadioLabels);
-
-        // Select phone number from device card — switches to single tab, selects device + SIM
-        function selectPhoneNumber(deviceId, simSlot) {
-            // Switch to the Single Message Sender tab
-            const singleTabBtn = document.querySelector('.tab-btn');
-            switchTab('single-tab', singleTabBtn);
-
-            // Select the target device in the dropdown
-            deviceSelect.value = deviceId;
-            updateSimRadioLabels();
-
-            // Select the correct SIM slot
-            const simRadio = document.getElementById(`sim-slot-${simSlot}`);
-            if (simRadio && !simRadio.disabled) {
-                simRadio.checked = true;
             }
 
-            // Scroll the form into view on mobile
-            document.getElementById('single-tab').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            deviceSelect.addEventListener('change', updateSimRadioLabels);
 
-            // Brief visual flash on the form to confirm action
-            const form = document.getElementById('single-form');
-            form.style.transition = 'box-shadow 0.3s ease';
-            form.style.boxShadow = '0 0 0 2px var(--accent)';
-            setTimeout(() => {
-                form.style.boxShadow = 'none';
-            }, 800);
-        }
+            // Select phone number from device card — switches to single tab, selects device + SIM
+            function selectPhoneNumber(deviceId, simSlot) {
+                // Switch to the Single Message Sender tab
+                const singleTabBtn = document.querySelector('.tab-btn');
+                switchTab('single-tab', singleTabBtn);
+
+                // Select the target device in the dropdown
+                deviceSelect.value = deviceId;
+                updateSimRadioLabels();
+
+                // Select the correct SIM slot
+                const simRadio = document.getElementById(`sim-slot-${simSlot}`);
+                if (simRadio && !simRadio.disabled) {
+                    simRadio.checked = true;
+                }
+
+                // Scroll the form into view on mobile
+                document.getElementById('single-tab').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                // Brief visual flash on the form to confirm action
+                const form = document.getElementById('single-form');
+                form.style.transition = 'box-shadow 0.3s ease';
+                form.style.boxShadow = '0 0 0 2px var(--accent)';
+                setTimeout(() => {
+                    form.style.boxShadow = 'none';
+                }, 800);
+            }
 
 
 
-        function updateTelegramUIFromSettings() {
-            const enabledToggle = document.getElementById('telegram-report-enabled');
-            if (enabledToggle) enabledToggle.checked = globalSettings.telegramDailyReportEnabled !== false;
-        }
+            function updateTelegramUIFromSettings() {
+                const enabledToggle = document.getElementById('telegram-report-enabled');
+                if (enabledToggle) enabledToggle.checked = globalSettings.telegramDailyReportEnabled !== false;
+            }
 
-        const telegramReportEnabledToggle = document.getElementById('telegram-report-enabled');
-        if (telegramReportEnabledToggle) {
-            telegramReportEnabledToggle.addEventListener('change', () => {
-                const enabled = telegramReportEnabledToggle.checked;
+            const telegramReportEnabledToggle = document.getElementById('telegram-report-enabled');
+            if (telegramReportEnabledToggle) {
+                telegramReportEnabledToggle.addEventListener('change', () => {
+                    const enabled = telegramReportEnabledToggle.checked;
+                    fetch('/api/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ telegramDailyReportEnabled: enabled })
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            appendLog(`Telegram midnight report auto-send ${enabled ? 'enabled' : 'disabled'}.`);
+                        });
+                });
+            }
+
+            const sendTestTelegramBtn = document.getElementById('send-test-telegram-btn');
+            if (sendTestTelegramBtn) {
+                sendTestTelegramBtn.addEventListener('click', () => {
+                    appendLog('Sending test daily report to Telegram...');
+                    sendTestTelegramBtn.disabled = true;
+                    fetch('/api/telegram/test', { method: 'POST' })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                appendLog('Telegram test daily report sent successfully! ✅');
+                                alert('Test daily report sent to Telegram group successfully!');
+                            } else {
+                                appendLog(`Failed to send Telegram test report: ${data.error}`, true);
+                                alert(`Failed to send test report: ${data.error}`);
+                            }
+                        })
+                        .catch(err => {
+                            appendLog(`Error sending report: ${err.message}`, true);
+                            alert(`Error sending report: ${err.message}`);
+                        })
+                        .finally(() => {
+                            sendTestTelegramBtn.disabled = false;
+                        });
+                });
+            }
+
+            // Update send rate settings
+            saveRateBtn.addEventListener('click', () => {
+                const rateVal = parseInt(rateInput.value);
+                if (isNaN(rateVal) || rateVal <= 0) {
+                    alert('Invalid sending rate');
+                    return;
+                }
+                appendLog(`Updating sending rate to ${rateVal} msg/min...`);
                 fetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegramDailyReportEnabled: enabled })
+                    body: JSON.stringify({ globalSendRate: rateVal })
                 })
-                    .then(res => res.json())
-                    .then(data => {
-                        appendLog(`Telegram midnight report auto-send ${enabled ? 'enabled' : 'disabled'}.`);
-                    });
-            });
-        }
-
-        const sendTestTelegramBtn = document.getElementById('send-test-telegram-btn');
-        if (sendTestTelegramBtn) {
-            sendTestTelegramBtn.addEventListener('click', () => {
-                appendLog('Sending test daily report to Telegram...');
-                sendTestTelegramBtn.disabled = true;
-                fetch('/api/telegram/test', { method: 'POST' })
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            appendLog('Telegram test daily report sent successfully! ✅');
-                            alert('Test daily report sent to Telegram group successfully!');
+                            appendLog(`Successfully saved send rate to ${data.settings.globalSendRate} msg/min`);
                         } else {
-                            appendLog(`Failed to send Telegram test report: ${data.error}`, true);
-                            alert(`Failed to send test report: ${data.error}`);
+                            appendLog(`Error updating send rate: ${data.error}`, true);
                         }
                     })
-                    .catch(err => {
-                        appendLog(`Error sending report: ${err.message}`, true);
-                        alert(`Error sending report: ${err.message}`);
+                    .catch(err => appendLog(`Network error updating settings: ${err.message}`, true));
+            });
+
+            // Single Send Submit
+            document.getElementById('single-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const to = document.getElementById('recipient-number').value.trim();
+                const message = document.getElementById('message-content').value.trim();
+                const sim = document.querySelector('input[name="single-sim"]:checked').value;
+                const deviceId = deviceSelect.value;
+
+                sendSingleBtn.disabled = true;
+                appendLog(`Queuing SMS to ${to} via SIM ${sim}...`);
+
+                fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to, message, sim, deviceId })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) {
+                            appendLog(`Send Command Error: ${data.error}`, true);
+                        } else {
+                            appendLog(`SMS Request queued. ID: ${data.id}`);
+                            document.getElementById('recipient-number').value = '';
+                            document.getElementById('message-content').value = '';
+                        }
                     })
+                    .catch(err => appendLog(`Network error sending SMS: ${err.message}`, true))
                     .finally(() => {
-                        sendTestTelegramBtn.disabled = false;
+                        sendSingleBtn.disabled = false;
                     });
             });
-        }
 
-        // Update send rate settings
-        saveRateBtn.addEventListener('click', () => {
-            const rateVal = parseInt(rateInput.value);
-            if (isNaN(rateVal) || rateVal <= 0) {
-                alert('Invalid sending rate');
-                return;
-            }
-            appendLog(`Updating sending rate to ${rateVal} msg/min...`);
-            fetch('/api/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ globalSendRate: rateVal })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        appendLog(`Successfully saved send rate to ${data.settings.globalSendRate} msg/min`);
-                    } else {
-                        appendLog(`Error updating send rate: ${data.error}`, true);
-                    }
-                })
-                .catch(err => appendLog(`Network error updating settings: ${err.message}`, true));
-        });
+            // Bulk Queue control & file loading
+            const csvFileInput = document.getElementById('csv-file');
+            const uploadCsvBtn = document.getElementById('upload-csv-btn');
+            const queueWidget = document.getElementById('queue-status-widget');
+            const queueDesc = document.getElementById('queue-desc');
+            const clearQueueBtn = document.getElementById('clear-queue-btn');
 
-        // Single Send Submit
-        document.getElementById('single-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const to = document.getElementById('recipient-number').value.trim();
-            const message = document.getElementById('message-content').value.trim();
-            const sim = document.querySelector('input[name="single-sim"]:checked').value;
-            const deviceId = deviceSelect.value;
+            csvFileInput.addEventListener('change', async () => {
+                const files = Array.from(csvFileInput.files);
+                const previewContainer = document.getElementById('csv-preview-container');
+                const previewBody = document.getElementById('csv-preview-body');
+                const previewTotalCount = document.getElementById('preview-total-count');
 
-            sendSingleBtn.disabled = true;
-            appendLog(`Queuing SMS to ${to} via SIM ${sim}...`);
+                if (files.length > 0) {
+                    selectedCsvFiles = files;
+                    // Reset file input value so selecting the same file next time triggers change event
+                    csvFileInput.value = '';
+                    uploadCsvBtn.disabled = false;
 
-            fetch('/api/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to, message, sim, deviceId })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.error) {
-                        appendLog(`Send Command Error: ${data.error}`, true);
-                    } else {
-                        appendLog(`SMS Request queued. ID: ${data.id}`);
-                        document.getElementById('recipient-number').value = '';
-                        document.getElementById('message-content').value = '';
-                    }
-                })
-                .catch(err => appendLog(`Network error sending SMS: ${err.message}`, true))
-                .finally(() => {
-                    sendSingleBtn.disabled = false;
-                });
-        });
+                    let allMessages = [];
+                    for (const file of selectedCsvFiles) {
+                        try {
+                            const text = await file.text();
+                            const rows = parseCSV(text);
+                            if (rows.length === 0) continue;
 
-        // Bulk Queue control & file loading
-        const csvFileInput = document.getElementById('csv-file');
-        const uploadCsvBtn = document.getElementById('upload-csv-btn');
-        const queueWidget = document.getElementById('queue-status-widget');
-        const queueDesc = document.getElementById('queue-desc');
-        const clearQueueBtn = document.getElementById('clear-queue-btn');
+                            let startIndex = 0;
+                            const firstRow = rows[0];
+                            const isHeader = firstRow.some(cell => {
+                                const c = cell.toLowerCase();
+                                return c.includes('sender') || c.includes('recipient') || c.includes('message') || c.includes('to') || c.includes('content') || c.includes('body');
+                            });
 
-        csvFileInput.addEventListener('change', async () => {
-            const files = Array.from(csvFileInput.files);
-            const previewContainer = document.getElementById('csv-preview-container');
-            const previewBody = document.getElementById('csv-preview-body');
-            const previewTotalCount = document.getElementById('preview-total-count');
-
-            if (files.length > 0) {
-                selectedCsvFiles = files;
-                // Reset file input value so selecting the same file next time triggers change event
-                csvFileInput.value = '';
-                uploadCsvBtn.disabled = false;
-
-                let allMessages = [];
-                for (const file of selectedCsvFiles) {
-                    try {
-                        const text = await file.text();
-                        const rows = parseCSV(text);
-                        if (rows.length === 0) continue;
-
-                        let startIndex = 0;
-                        const firstRow = rows[0];
-                        const isHeader = firstRow.some(cell => {
-                            const c = cell.toLowerCase();
-                            return c.includes('sender') || c.includes('recipient') || c.includes('message') || c.includes('to') || c.includes('content') || c.includes('body');
-                        });
-
-                        if (isHeader) {
-                            startIndex = 1;
-                        }
-
-                        for (let i = startIndex; i < rows.length; i++) {
-                            const row = rows[i];
-                            if (row.length < 3) continue;
-                            const sender = row[0].trim();
-                            const recipient = row[1].trim();
-                            const message = row[2].trim();
-                            if (sender && recipient && message) {
-                                allMessages.push({ sender, recipient, message });
+                            if (isHeader) {
+                                startIndex = 1;
                             }
-                        }
-                    } catch (err) {
-                        console.error('Error parsing CSV for preview:', err);
-                    }
-                }
 
-                if (allMessages.length > 0) {
-                    previewMessages = allMessages;
-                    previewCurrentPage = 1;
-                    updateCsvPreviewTableUI();
-                    previewContainer.style.display = 'block';
+                            for (let i = startIndex; i < rows.length; i++) {
+                                const row = rows[i];
+                                if (row.length < 3) continue;
+                                const sender = row[0].trim();
+                                const recipient = row[1].trim();
+                                const message = row[2].trim();
+                                if (sender && recipient && message) {
+                                    allMessages.push({ sender, recipient, message });
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Error parsing CSV for preview:', err);
+                        }
+                    }
+
+                    if (allMessages.length > 0) {
+                        previewMessages = allMessages;
+                        previewCurrentPage = 1;
+                        updateCsvPreviewTableUI();
+                        previewContainer.style.display = 'block';
+                    } else {
+                        previewMessages = [];
+                        previewCurrentPage = 1;
+                        updateCsvPreviewTableUI();
+                        previewContainer.style.display = 'block';
+                    }
                 } else {
+                    uploadCsvBtn.disabled = true;
+                    selectedCsvFiles = [];
                     previewMessages = [];
                     previewCurrentPage = 1;
                     updateCsvPreviewTableUI();
-                    previewContainer.style.display = 'block';
+                    previewContainer.style.display = 'none';
                 }
-            } else {
+            });
+
+            uploadCsvBtn.addEventListener('click', async () => {
+                const files = selectedCsvFiles;
+                if (files.length === 0) return;
+
                 uploadCsvBtn.disabled = true;
+                let totalQueued = 0;
+
+                for (const file of files) {
+                    appendLog(`Reading CSV file: ${file.name}...`);
+                    try {
+                        const text = await file.text();
+                        appendLog(`Uploading ${file.name} to server (${text.length} bytes)...`);
+                        const res = await fetch('/api/upload-csv', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ csvText: text })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            appendLog(`${file.name}: Queued ${data.count} messages.`);
+                            totalQueued += data.count;
+                        } else {
+                            appendLog(`${file.name}: Failed — ${data.error}`, true);
+                        }
+                    } catch (err) {
+                        appendLog(`${file.name}: Network error — ${err.message}`, true);
+                    }
+                }
+
+                appendLog(`Total queued from ${files.length} file(s): ${totalQueued} messages.`);
                 selectedCsvFiles = [];
+                csvFileInput.value = '';
+                uploadCsvBtn.disabled = true;
+
+                // Clear and hide preview
                 previewMessages = [];
                 previewCurrentPage = 1;
-                updateCsvPreviewTableUI();
-                previewContainer.style.display = 'none';
-            }
-        });
+                const previewContainer = document.getElementById('csv-preview-container');
+                if (previewContainer) {
+                    previewContainer.style.display = 'none';
+                    updateCsvPreviewTableUI();
+                }
+            });
 
-        uploadCsvBtn.addEventListener('click', async () => {
-            const files = selectedCsvFiles;
-            if (files.length === 0) return;
+            clearQueueBtn.addEventListener('click', () => {
+                if (!confirm('STOP all bulk message queues across all devices?\n\n• Click OK to STOP all sending immediately.\n• Click Cancel to keep sending.')) return;
+                clearQueueBtn.disabled = true;
+                clearQueueBtn.innerText = 'Stopping...';
 
-            uploadCsvBtn.disabled = true;
-            let totalQueued = 0;
+                // Optimistic UI update
+                const previousBreakdown = [...queueBreakdown];
+                const previousQueueLength = currentQueueLength;
+                queueBreakdown = [];
+                activeDeviceQueues = 0;
+                updateQueueUI(0);
 
-            for (const file of files) {
-                appendLog(`Reading CSV file: ${file.name}...`);
-                try {
-                    const text = await file.text();
-                    appendLog(`Uploading ${file.name} to server (${text.length} bytes)...`);
-                    const res = await fetch('/api/upload-csv', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ csvText: text })
+                fetch('/api/clear-queue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            appendLog(`All bulk sending queues cleared successfully.`);
+                            showToast(`All bulk sending queues stopped (${data.count} messages removed)`);
+                        } else {
+                            showToast(`Failed to stop queues: ${data.error || 'Server error'}`, true);
+                        }
+                    })
+                    .catch(err => {
+                        appendLog(`Network error clearing queue: ${err.message}`, true);
+                        showToast(`Network error stopping queues: ${err.message}`, true);
+                        // Revert optimistic update on network failure
+                        queueBreakdown = previousBreakdown;
+                        activeDeviceQueues = queueBreakdown.length;
+                        updateQueueUI(previousQueueLength);
+                    })
+                    .finally(() => {
+                        clearQueueBtn.disabled = false;
+                        clearQueueBtn.innerText = 'Cancel All';
                     });
-                    const data = await res.json();
-                    if (data.success) {
-                        appendLog(`${file.name}: Queued ${data.count} messages.`);
-                        totalQueued += data.count;
-                    } else {
-                        appendLog(`${file.name}: Failed — ${data.error}`, true);
-                    }
-                } catch (err) {
-                    appendLog(`${file.name}: Network error — ${err.message}`, true);
+            });
+
+            window.cancelDeviceQueue = function (senderKey, senderDisplay, btnElement) {
+                const displayName = senderDisplay || senderKey;
+                const confirmMsg = `STOP sending queue for device ${displayName}?\n\n• Click OK to STOP sending immediately.\n• Click Cancel to keep sending.`;
+                if (!confirm(confirmMsg)) return;
+
+                if (btnElement) {
+                    btnElement.disabled = true;
+                    btnElement.innerText = 'Stopping...';
                 }
-            }
 
-            appendLog(`Total queued from ${files.length} file(s): ${totalQueued} messages.`);
-            selectedCsvFiles = [];
-            csvFileInput.value = '';
-            uploadCsvBtn.disabled = true;
+                // Save snapshot for rollback if network fails
+                const previousBreakdown = [...queueBreakdown];
+                const previousQueueLength = currentQueueLength;
 
-            // Clear and hide preview
-            previewMessages = [];
-            previewCurrentPage = 1;
-            const previewContainer = document.getElementById('csv-preview-container');
-            if (previewContainer) {
-                previewContainer.style.display = 'none';
-                updateCsvPreviewTableUI();
-            }
-        });
+                // Optimistic UI update: immediately remove from local state so UI updates instantly
+                const devIndex = queueBreakdown.findIndex(q =>
+                    (q.senderKey && q.senderKey === senderKey) ||
+                    (q.sender && q.sender === senderDisplay) ||
+                    (q.sender && normalizeSender(q.sender) === normalizeSender(displayName))
+                );
+                let removedCount = 0;
+                if (devIndex !== -1) {
+                    removedCount = queueBreakdown[devIndex].remaining;
+                    queueBreakdown.splice(devIndex, 1);
+                }
+                activeDeviceQueues = queueBreakdown.length;
+                currentQueueLength = Math.max(0, currentQueueLength - removedCount);
+                updateQueueUI(currentQueueLength);
 
-        clearQueueBtn.addEventListener('click', () => {
-            if (!confirm('STOP all bulk message queues across all devices?\n\n• Click OK to STOP all sending immediately.\n• Click Cancel to keep sending.')) return;
-            clearQueueBtn.disabled = true;
-            clearQueueBtn.innerText = 'Stopping...';
-
-            // Optimistic UI update
-            const previousBreakdown = [...queueBreakdown];
-            const previousQueueLength = currentQueueLength;
-            queueBreakdown = [];
-            activeDeviceQueues = 0;
-            updateQueueUI(0);
-
-            fetch('/api/clear-queue', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        appendLog(`All bulk sending queues cleared successfully.`);
-                        showToast(`All bulk sending queues stopped (${data.count} messages removed)`);
-                    } else {
-                        showToast(`Failed to stop queues: ${data.error || 'Server error'}`, true);
-                    }
+                fetch('/api/clear-queue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ senderKey: senderKey, sender: senderDisplay })
                 })
-                .catch(err => {
-                    appendLog(`Network error clearing queue: ${err.message}`, true);
-                    showToast(`Network error stopping queues: ${err.message}`, true);
-                    // Revert optimistic update on network failure
-                    queueBreakdown = previousBreakdown;
-                    activeDeviceQueues = queueBreakdown.length;
-                    updateQueueUI(previousQueueLength);
-                })
-                .finally(() => {
-                    clearQueueBtn.disabled = false;
-                    clearQueueBtn.innerText = 'Cancel All';
-                });
-        });
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            appendLog(`Cleared ${data.count || removedCount} queued message(s) for device ${displayName}.`);
+                            showToast(`Stopped queue for ${displayName} (${data.count || removedCount} messages removed)`);
+                        } else {
+                            showToast(`Failed to stop queue for ${displayName}: ${data.error || 'Server error'}`, true);
+                        }
+                    })
+                    .catch(err => {
+                        appendLog(`Network error clearing queue for device ${displayName}: ${err.message}`, true);
+                        showToast(`Network error stopping queue: ${err.message}`, true);
+                        // Revert optimistic update
+                        queueBreakdown = previousBreakdown;
+                        activeDeviceQueues = queueBreakdown.length;
+                        updateQueueUI(previousQueueLength);
+                    });
+            };
 
-        window.cancelDeviceQueue = function (senderKey, senderDisplay, btnElement) {
-            const displayName = senderDisplay || senderKey;
-            const confirmMsg = `STOP sending queue for device ${displayName}?\n\n• Click OK to STOP sending immediately.\n• Click Cancel to keep sending.`;
-            if (!confirm(confirmMsg)) return;
-
-            if (btnElement) {
-                btnElement.disabled = true;
-                btnElement.innerText = 'Stopping...';
-            }
-
-            // Save snapshot for rollback if network fails
-            const previousBreakdown = [...queueBreakdown];
-            const previousQueueLength = currentQueueLength;
-
-            // Optimistic UI update: immediately remove from local state so UI updates instantly
-            const devIndex = queueBreakdown.findIndex(q => 
-                (q.senderKey && q.senderKey === senderKey) || 
-                (q.sender && q.sender === senderDisplay) ||
-                (q.sender && normalizeSender(q.sender) === normalizeSender(displayName))
-            );
-            let removedCount = 0;
-            if (devIndex !== -1) {
-                removedCount = queueBreakdown[devIndex].remaining;
-                queueBreakdown.splice(devIndex, 1);
-            }
-            activeDeviceQueues = queueBreakdown.length;
-            currentQueueLength = Math.max(0, currentQueueLength - removedCount);
-            updateQueueUI(currentQueueLength);
-
-            fetch('/api/clear-queue', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ senderKey: senderKey, sender: senderDisplay })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        appendLog(`Cleared ${data.count || removedCount} queued message(s) for device ${displayName}.`);
-                        showToast(`Stopped queue for ${displayName} (${data.count || removedCount} messages removed)`);
-                    } else {
-                        showToast(`Failed to stop queue for ${displayName}: ${data.error || 'Server error'}`, true);
-                    }
-                })
-                .catch(err => {
-                    appendLog(`Network error clearing queue for device ${displayName}: ${err.message}`, true);
-                    showToast(`Network error stopping queue: ${err.message}`, true);
-                    // Revert optimistic update
-                    queueBreakdown = previousBreakdown;
-                    activeDeviceQueues = queueBreakdown.length;
-                    updateQueueUI(previousQueueLength);
-                });
-        };
-
-        function updateQueueUI(length) {
-            currentQueueLength = length;
-            if (length > 0) {
-                queueWidget.style.display = 'flex';
-                queueDesc.innerText = `Remaining: ${length} messages across ${activeDeviceQueues || 1} device(s) (~${Math.ceil(length / (parseInt(rateInput.value) * (activeDeviceQueues || 1)))} min left)`;
-            } else {
-                queueWidget.style.display = 'none';
-            }
-            updateBulkInfoUI(length);
-        }
-
-        // Update sending rate and expected completion time in bulk tab
-        function updateBulkInfoUI(queueLength) {
-            const rate = globalSettings.globalSendRate || 10;
-            const delay = (60 / rate).toFixed(1);
-            const devices = activeDeviceQueues || 1;
-            const effectiveRate = rate * devices;
-
-            const bulkRateDisplay = document.getElementById('bulk-rate-display');
-            const bulkDelayDisplay = document.getElementById('bulk-delay-display');
-            const bulkExpectedTimeContainer = document.getElementById('bulk-expected-time-container');
-            const bulkQueuedCount = document.getElementById('bulk-queued-count');
-            const bulkCompletionTime = document.getElementById('bulk-completion-time');
-            const bulkConcurrentInfo = document.getElementById('bulk-concurrent-info');
-            const bulkActiveDevices = document.getElementById('bulk-active-devices');
-            const bulkEffectiveRate = document.getElementById('bulk-effective-rate');
-            const bulkDeviceBreakdown = document.getElementById('bulk-device-breakdown');
-            const bulkBreakdownList = document.getElementById('bulk-breakdown-list');
-
-            if (bulkRateDisplay) bulkRateDisplay.innerText = rate;
-            if (bulkDelayDisplay) bulkDelayDisplay.innerText = delay;
-
-            // Show concurrent device info when queues are active
-            if (bulkConcurrentInfo) {
-                if (activeDeviceQueues > 0) {
-                    bulkConcurrentInfo.style.display = 'block';
-                    if (bulkActiveDevices) bulkActiveDevices.innerText = devices;
-                    if (bulkEffectiveRate) bulkEffectiveRate.innerText = effectiveRate;
+            function updateQueueUI(length) {
+                currentQueueLength = length;
+                if (length > 0) {
+                    queueWidget.style.display = 'flex';
+                    queueDesc.innerText = `Remaining: ${length} messages across ${activeDeviceQueues || 1} device(s) (~${Math.ceil(length / (parseInt(rateInput.value) * (activeDeviceQueues || 1)))} min left)`;
                 } else {
-                    bulkConcurrentInfo.style.display = 'none';
+                    queueWidget.style.display = 'none';
                 }
+                updateBulkInfoUI(length);
             }
 
-            if (bulkExpectedTimeContainer) {
-                if (queueLength && queueLength > 0) {
-                    bulkExpectedTimeContainer.style.display = 'block';
-                    if (bulkQueuedCount) bulkQueuedCount.innerText = queueLength;
+            // Update sending rate and expected completion time in bulk tab
+            function updateBulkInfoUI(queueLength) {
+                const rate = globalSettings.globalSendRate || 10;
+                const delay = (60 / rate).toFixed(1);
+                const devices = activeDeviceQueues || 1;
+                const effectiveRate = rate * devices;
 
-                    // ETA accounts for concurrent sending: total / effectiveRate
-                    const totalSecs = Math.ceil(queueLength * (60 / effectiveRate));
-                    const mins = Math.floor(totalSecs / 60);
-                    const secs = totalSecs % 60;
-                    let durationText = '';
-                    if (mins > 0) {
-                        durationText += `${mins}m `;
+                const bulkRateDisplay = document.getElementById('bulk-rate-display');
+                const bulkDelayDisplay = document.getElementById('bulk-delay-display');
+                const bulkExpectedTimeContainer = document.getElementById('bulk-expected-time-container');
+                const bulkQueuedCount = document.getElementById('bulk-queued-count');
+                const bulkCompletionTime = document.getElementById('bulk-completion-time');
+                const bulkConcurrentInfo = document.getElementById('bulk-concurrent-info');
+                const bulkActiveDevices = document.getElementById('bulk-active-devices');
+                const bulkEffectiveRate = document.getElementById('bulk-effective-rate');
+                const bulkDeviceBreakdown = document.getElementById('bulk-device-breakdown');
+                const bulkBreakdownList = document.getElementById('bulk-breakdown-list');
+
+                if (bulkRateDisplay) bulkRateDisplay.innerText = rate;
+                if (bulkDelayDisplay) bulkDelayDisplay.innerText = delay;
+
+                // Show concurrent device info when queues are active
+                if (bulkConcurrentInfo) {
+                    if (activeDeviceQueues > 0) {
+                        bulkConcurrentInfo.style.display = 'block';
+                        if (bulkActiveDevices) bulkActiveDevices.innerText = devices;
+                        if (bulkEffectiveRate) bulkEffectiveRate.innerText = effectiveRate;
+                    } else {
+                        bulkConcurrentInfo.style.display = 'none';
                     }
-                    durationText += `${secs}s`;
-                    if (bulkCompletionTime) bulkCompletionTime.innerText = durationText;
-
-                    const completionDate = new Date(Date.now() + totalSecs * 1000);
-                    const completionClockText = completionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    const bulkCompletionClock = document.getElementById('bulk-completion-clock');
-                    if (bulkCompletionClock) bulkCompletionClock.innerText = completionClockText;
-                } else {
-                    bulkExpectedTimeContainer.style.display = 'none';
                 }
-            }
 
-            // Render per-device breakdown
-            if (bulkDeviceBreakdown && bulkBreakdownList) {
-                if (queueBreakdown.length > 0) {
-                    bulkDeviceBreakdown.style.display = 'block';
-                    bulkBreakdownList.innerHTML = queueBreakdown.map(q => {
-                        const qSecs = Math.ceil(q.remaining * (60 / rate));
-                        const qMins = Math.floor(qSecs / 60);
-                        const qS = qSecs % 60;
-                        let qDuration = '';
-                        if (qMins > 0) qDuration += `${qMins}m `;
-                        qDuration += `${qS}s`;
-                        return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0.5rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px;">
+                if (bulkExpectedTimeContainer) {
+                    if (queueLength && queueLength > 0) {
+                        bulkExpectedTimeContainer.style.display = 'block';
+                        if (bulkQueuedCount) bulkQueuedCount.innerText = queueLength;
+
+                        // ETA accounts for concurrent sending: total / effectiveRate
+                        const totalSecs = Math.ceil(queueLength * (60 / effectiveRate));
+                        const mins = Math.floor(totalSecs / 60);
+                        const secs = totalSecs % 60;
+                        let durationText = '';
+                        if (mins > 0) {
+                            durationText += `${mins}m `;
+                        }
+                        durationText += `${secs}s`;
+                        if (bulkCompletionTime) bulkCompletionTime.innerText = durationText;
+
+                        const completionDate = new Date(Date.now() + totalSecs * 1000);
+                        const completionClockText = completionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        const bulkCompletionClock = document.getElementById('bulk-completion-clock');
+                        if (bulkCompletionClock) bulkCompletionClock.innerText = completionClockText;
+                    } else {
+                        bulkExpectedTimeContainer.style.display = 'none';
+                    }
+                }
+
+                // Render per-device breakdown
+                if (bulkDeviceBreakdown && bulkBreakdownList) {
+                    if (queueBreakdown.length > 0) {
+                        bulkDeviceBreakdown.style.display = 'block';
+                        bulkBreakdownList.innerHTML = queueBreakdown.map(q => {
+                            const qSecs = Math.ceil(q.remaining * (60 / rate));
+                            const qMins = Math.floor(qSecs / 60);
+                            const qS = qSecs % 60;
+                            let qDuration = '';
+                            if (qMins > 0) qDuration += `${qMins}m `;
+                            qDuration += `${qS}s`;
+                            return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0.5rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <span style="color: var(--accent); font-weight: 600;">📱</span>
                                 <span style="color: var(--text); font-weight: 600;">${esc(q.sender)}</span>
@@ -2379,39 +2464,39 @@
                                 <button class="btn btn-danger" onclick="cancelDeviceQueue('${esc(q.senderKey || q.sender)}', '${esc(q.sender)}', this)" style="padding: 0.15rem 0.4rem; font-size: 10px; line-height: 1; border-radius: 3px; cursor: pointer;" title="Stop queue for this device">Cancel</button>
                             </div>
                         </div>`;
-                    }).join('');
-                } else {
-                    bulkDeviceBreakdown.style.display = 'none';
-                    bulkBreakdownList.innerHTML = '';
+                        }).join('');
+                    } else {
+                        bulkDeviceBreakdown.style.display = 'none';
+                        bulkBreakdownList.innerHTML = '';
+                    }
                 }
             }
-        }
 
-        // Update CSV Preview Table UI with pagination
-        function updateCsvPreviewTableUI() {
-            const previewBody = document.getElementById('csv-preview-body');
-            const previewContainer = document.getElementById('csv-preview-container');
-            const previewTotalCount = document.getElementById('preview-total-count');
-            const previewPagination = document.getElementById('csv-preview-pagination');
-            const previewInfo = document.getElementById('csv-preview-info');
-            const previewPageNum = document.getElementById('csv-preview-page-num');
-            const previewPrevBtn = document.getElementById('csv-preview-prev-btn');
-            const previewNextBtn = document.getElementById('csv-preview-next-btn');
+            // Update CSV Preview Table UI with pagination
+            function updateCsvPreviewTableUI() {
+                const previewBody = document.getElementById('csv-preview-body');
+                const previewContainer = document.getElementById('csv-preview-container');
+                const previewTotalCount = document.getElementById('preview-total-count');
+                const previewPagination = document.getElementById('csv-preview-pagination');
+                const previewInfo = document.getElementById('csv-preview-info');
+                const previewPageNum = document.getElementById('csv-preview-page-num');
+                const previewPrevBtn = document.getElementById('csv-preview-prev-btn');
+                const previewNextBtn = document.getElementById('csv-preview-next-btn');
 
-            if (previewMessages.length === 0) {
-                previewBody.innerHTML = '<tr><td colspan="3" class="no-data">No messages selected or CSV is empty.</td></tr>';
-                previewTotalCount.innerText = '';
-                document.getElementById('csv-preview-estimation').style.display = 'none';
-                previewPagination.style.display = 'none';
-                return;
-            }
+                if (previewMessages.length === 0) {
+                    previewBody.innerHTML = '<tr><td colspan="3" class="no-data">No messages selected or CSV is empty.</td></tr>';
+                    previewTotalCount.innerText = '';
+                    document.getElementById('csv-preview-estimation').style.display = 'none';
+                    previewPagination.style.display = 'none';
+                    return;
+                }
 
-            // Paginate local messages array
-            const startIndex = (previewCurrentPage - 1) * previewPageSize;
-            const endIndex = Math.min(startIndex + previewPageSize, previewMessages.length);
-            const pageMessages = previewMessages.slice(startIndex, endIndex);
+                // Paginate local messages array
+                const startIndex = (previewCurrentPage - 1) * previewPageSize;
+                const endIndex = Math.min(startIndex + previewPageSize, previewMessages.length);
+                const pageMessages = previewMessages.slice(startIndex, endIndex);
 
-            previewBody.innerHTML = pageMessages.map(m => `
+                previewBody.innerHTML = pageMessages.map(m => `
                 <tr>
                     <td style="word-break: break-all; padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.02);">${esc(m.sender)}</td>
                     <td style="word-break: break-all; padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.02);"><strong>${esc(m.recipient)}</strong></td>
@@ -2419,102 +2504,128 @@
                 </tr>
             `).join('');
 
-            previewTotalCount.innerText = `Total: ${previewMessages.length} message${previewMessages.length > 1 ? 's' : ''}`;
+                previewTotalCount.innerText = `Total: ${previewMessages.length} message${previewMessages.length > 1 ? 's' : ''}`;
 
-            // Show estimations
-            const rate = globalSettings.globalSendRate || 10;
-            const totalSecs = Math.ceil(previewMessages.length * (60 / rate));
-            const mins = Math.floor(totalSecs / 60);
-            const secs = totalSecs % 60;
-            let durationText = '';
-            if (mins > 0) {
-                durationText += `${mins}m `;
-            }
-            durationText += `${secs}s`;
-
-            const completionDate = new Date(Date.now() + totalSecs * 1000);
-            const completionClockText = completionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-            document.getElementById('preview-est-duration').innerText = durationText;
-            document.getElementById('preview-est-completion').innerText = completionClockText;
-            document.getElementById('csv-preview-estimation').style.display = 'flex';
-
-            // Show pagination
-            previewPagination.style.display = 'flex';
-            previewInfo.innerText = `Showing ${startIndex + 1}-${endIndex} of ${previewMessages.length}`;
-
-            const totalPages = Math.ceil(previewMessages.length / previewPageSize) || 1;
-            previewPageNum.innerText = `Page ${previewCurrentPage} of ${totalPages}`;
-            previewPrevBtn.disabled = previewCurrentPage <= 1;
-            previewNextBtn.disabled = previewCurrentPage >= totalPages;
-        }
-
-        document.getElementById('csv-preview-prev-btn').addEventListener('click', () => {
-            if (previewCurrentPage > 1) {
-                previewCurrentPage--;
-                updateCsvPreviewTableUI();
-            }
-        });
-
-        document.getElementById('csv-preview-next-btn').addEventListener('click', () => {
-            const totalPages = Math.ceil(previewMessages.length / previewPageSize) || 1;
-            if (previewCurrentPage < totalPages) {
-                previewCurrentPage++;
-                updateCsvPreviewTableUI();
-            }
-        });
-
-        // Render Transmission History list (Backend-driven)
-        const historyBody = document.getElementById('history-body');
-        let currentFetchController = null;
-
-        function fetchMessagesFromServer() {
-            if (currentFetchController) {
-                currentFetchController.abort();
-            }
-            currentFetchController = new AbortController();
-            const signal = currentFetchController.signal;
-
-            const url = `/api/messages?page=${currentPage}&limit=${pageSize}&search=${encodeURIComponent(searchQuery)}&sender=${encodeURIComponent(filterSender)}&status=${encodeURIComponent(filterStatus)}`;
-
-            fetch(url, { signal })
-                .then(res => res.json())
-                .then(data => {
-                    displayedMessages = data.messages || [];
-                    totalMessagesCount = data.total || 0;
-                    currentPage = data.page || 1;
-                    pageSize = data.limit || 25;
-
-                    updateHistoryTableUI();
-                    updatePaginationUI();
-                })
-                .catch(err => {
-                    if (err.name !== 'AbortError') {
-                        appendLog(`Failed to fetch messages: ${err.message}`, true);
-                    }
-                });
-        }
-
-        function updateHistoryTableUI() {
-            if (displayedMessages.length === 0) {
-                const hasFilters = searchQuery || filterSender || filterStatus;
-                historyBody.innerHTML = `<tr><td colspan="9" class="no-data">${hasFilters ? 'No matching messages found.' : 'No messages processed.'}</td></tr>`;
-                return;
-            }
-
-            historyBody.innerHTML = displayedMessages.map(m => {
-                const timeStr = new Date(m.createdAt).toLocaleString();
-                const badgeClass = `badge badge-${m.status}`;
-                const typeBadgeClass = `badge badge-${m.type || 'single'}`;
-                const phoneText = m.deviceModel || '-';
-                const errText = m.error ? `<div style="font-size: 9px; color: var(--danger);">${esc(m.error)}</div>` : '';
-                let retryBtn = '';
-                if (m.status === 'failed' && m.retriedWith) {
-                    retryBtn = `<button class="btn btn-secondary" style="padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1; opacity: 0.5; cursor: not-allowed;" disabled>Retried</button>`;
-                } else if (m.status === 'failed') {
-                    retryBtn = `<button class="btn btn-secondary" style="padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1;" onclick="retryMessage('${esc(m.id)}')" title="Resend this message">Retry</button>`;
+                // Show estimations
+                const rate = globalSettings.globalSendRate || 10;
+                const totalSecs = Math.ceil(previewMessages.length * (60 / rate));
+                const mins = Math.floor(totalSecs / 60);
+                const secs = totalSecs % 60;
+                let durationText = '';
+                if (mins > 0) {
+                    durationText += `${mins}m `;
                 }
-                return `
+                durationText += `${secs}s`;
+
+                const completionDate = new Date(Date.now() + totalSecs * 1000);
+                const completionClockText = completionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                document.getElementById('preview-est-duration').innerText = durationText;
+                document.getElementById('preview-est-completion').innerText = completionClockText;
+                document.getElementById('csv-preview-estimation').style.display = 'flex';
+
+                // Show pagination
+                previewPagination.style.display = 'flex';
+                previewInfo.innerText = `Showing ${startIndex + 1}-${endIndex} of ${previewMessages.length}`;
+
+                const totalPages = Math.ceil(previewMessages.length / previewPageSize) || 1;
+                previewPageNum.innerText = `Page ${previewCurrentPage} of ${totalPages}`;
+                previewPrevBtn.disabled = previewCurrentPage <= 1;
+                previewNextBtn.disabled = previewCurrentPage >= totalPages;
+            }
+
+            document.getElementById('csv-preview-prev-btn').addEventListener('click', () => {
+                if (previewCurrentPage > 1) {
+                    previewCurrentPage--;
+                    updateCsvPreviewTableUI();
+                }
+            });
+
+            document.getElementById('csv-preview-next-btn').addEventListener('click', () => {
+                const totalPages = Math.ceil(previewMessages.length / previewPageSize) || 1;
+                if (previewCurrentPage < totalPages) {
+                    previewCurrentPage++;
+                    updateCsvPreviewTableUI();
+                }
+            });
+
+            // Render Transmission History list (Backend-driven)
+            const historyBody = document.getElementById('history-body');
+            const historyLoadingOverlay = document.getElementById('history-loading-overlay');
+            let currentFetchController = null;
+
+            function setLogsLoading(loading) {
+                if (historyLoadingOverlay) {
+                    if (loading) {
+                        historyLoadingOverlay.classList.add('active');
+                    } else {
+                        historyLoadingOverlay.classList.remove('active');
+                    }
+                }
+                if (prevPageBtn) prevPageBtn.disabled = loading || currentPage <= 1;
+                if (nextPageBtn) {
+                    const totalPages = Math.ceil(totalMessagesCount / pageSize) || 1;
+                    nextPageBtn.disabled = loading || currentPage >= totalPages;
+                }
+            }
+
+            function fetchMessagesFromServer() {
+                if (currentFetchController) {
+                    currentFetchController.abort();
+                }
+                currentFetchController = new AbortController();
+                const signal = currentFetchController.signal;
+
+                setLogsLoading(true);
+
+                const url = `/api/messages?page=${currentPage}&limit=${pageSize}&search=${encodeURIComponent(searchQuery)}&sender=${encodeURIComponent(filterSender)}&status=${encodeURIComponent(filterStatus)}`;
+
+                fetch(url, { signal })
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                        return res.json();
+                    })
+                    .then(data => {
+                        displayedMessages = data.messages || [];
+                        totalMessagesCount = data.total || 0;
+                        currentPage = data.page || 1;
+                        pageSize = data.limit || 25;
+
+                        updateHistoryTableUI();
+                        updatePaginationUI();
+                    })
+                    .catch(err => {
+                        if (err.name !== 'AbortError') {
+                            appendLog(`Failed to fetch messages: ${err.message}`, true);
+                        }
+                    })
+                    .finally(() => {
+                        if (currentFetchController && currentFetchController.signal === signal) {
+                            setLogsLoading(false);
+                        }
+                    });
+            }
+
+            function updateHistoryTableUI() {
+                if (displayedMessages.length === 0) {
+                    const hasFilters = searchQuery || filterSender || filterStatus;
+                    historyBody.innerHTML = `<tr><td colspan="9" class="no-data">${hasFilters ? 'No matching messages found.' : 'No messages processed.'}</td></tr>`;
+                    return;
+                }
+
+                historyBody.innerHTML = displayedMessages.map(m => {
+                    const timeStr = new Date(m.createdAt).toLocaleString();
+                    const badgeClass = `badge badge-${m.status}`;
+                    const typeBadgeClass = `badge badge-${m.type || 'single'}`;
+                    const phoneText = m.deviceModel || '-';
+                    const errText = m.error ? `<div style="font-size: 9px; color: var(--danger);">${esc(m.error)}</div>` : '';
+                    let retryBtn = '';
+                    if (m.status === 'failed' && m.retriedWith) {
+                        retryBtn = `<button class="btn btn-secondary" style="padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1; opacity: 0.5; cursor: not-allowed;" disabled>Retried</button>`;
+                    } else if (m.status === 'failed') {
+                        retryBtn = `<button class="btn btn-secondary" style="padding: 0.2rem 0.4rem; font-size: 10px; line-height: 1;" onclick="retryMessage('${esc(m.id)}')" title="Resend this message">Retry</button>`;
+                    }
+                    return `
                     <tr>
                         <td style="color: var(--text-muted); font-weight: 500;">${esc(phoneText)}</td>
                         <td><span class="${typeBadgeClass}">${esc(m.type || 'single')}</span></td>
@@ -2530,434 +2641,441 @@
                         <td class="action-column" style="text-align: right;">${retryBtn}</td>
                     </tr>
                 `;
-            }).join('');
-        }
-
-        const paginationInfo = document.getElementById('pagination-info');
-        const prevPageBtn = document.getElementById('prev-page-btn');
-        const nextPageBtn = document.getElementById('next-page-btn');
-        const pageNumDisplay = document.getElementById('page-num-display');
-        const pageSizeSelect = document.getElementById('page-size-select');
-
-        function updatePaginationUI() {
-            const totalPages = Math.ceil(totalMessagesCount / pageSize) || 1;
-
-            prevPageBtn.disabled = currentPage <= 1;
-            nextPageBtn.disabled = currentPage >= totalPages;
-
-            pageNumDisplay.innerText = `Page ${currentPage} of ${totalPages}`;
-
-            if (totalMessagesCount === 0) {
-                paginationInfo.innerText = searchQuery ? 'No matching messages' : 'Showing 0 messages';
-            } else {
-                const start = (currentPage - 1) * pageSize + 1;
-                const end = Math.min(start + pageSize - 1, totalMessagesCount);
-                const filterSuffix = searchQuery ? ' (filtered)' : '';
-                paginationInfo.innerText = `Showing ${start}-${end} of ${totalMessagesCount} messages${filterSuffix}`;
+                }).join('');
             }
 
-            pageSizeSelect.value = pageSize;
-        }
+            const paginationInfo = document.getElementById('pagination-info');
+            const prevPageBtn = document.getElementById('prev-page-btn');
+            const nextPageBtn = document.getElementById('next-page-btn');
+            const pageNumDisplay = document.getElementById('page-num-display');
+            const pageSizeSelect = document.getElementById('page-size-select');
 
-        // Clear transmission logs click listener
-        const clearLogsBtn = document.getElementById('clear-logs-btn');
-        clearLogsBtn.addEventListener('click', () => {
-            if (!confirm('Are you sure you want to permanently clear all transmission logs?')) return;
-            clearLogsBtn.disabled = true;
-            fetch('/api/clear-messages', { method: 'POST' })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        appendLog(`Transmission logs cleared.`);
-                    } else {
-                        appendLog(`Error clearing logs: ${data.error}`, true);
-                    }
-                })
-                .catch(err => appendLog(`Network error clearing logs: ${err.message}`, true))
-                .finally(() => {
-                    clearLogsBtn.disabled = false;
-                });
-        });
+            function updatePaginationUI() {
+                const totalPages = Math.ceil(totalMessagesCount / pageSize) || 1;
 
-        // Phone Search event listeners
-        const phoneSearchInput = document.getElementById('phone-search');
-        const phoneSearchClearBtn = document.getElementById('phone-search-clear');
+                prevPageBtn.disabled = currentPage <= 1;
+                nextPageBtn.disabled = currentPage >= totalPages;
 
-        phoneSearchInput.addEventListener('input', () => {
-            const val = phoneSearchInput.value;
-            phoneSearchQuery = val;
+                pageNumDisplay.innerText = `Page ${currentPage} of ${totalPages}`;
 
-            if (val) {
-                phoneSearchClearBtn.style.display = 'block';
-            } else {
+                const hasFilter = searchQuery || filterSender || filterStatus;
+                if (totalMessagesCount === 0) {
+                    paginationInfo.innerText = hasFilter ? 'No matching messages' : 'Showing 0 messages';
+                } else {
+                    const start = (currentPage - 1) * pageSize + 1;
+                    const end = Math.min(start + pageSize - 1, totalMessagesCount);
+                    const filterSuffix = hasFilter ? ' (filtered)' : '';
+                    paginationInfo.innerText = `Showing ${start}-${end} of ${totalMessagesCount} messages${filterSuffix}`;
+                }
+
+                pageSizeSelect.value = pageSize;
+            }
+
+            // Clear transmission logs click listener
+            const clearLogsBtn = document.getElementById('clear-logs-btn');
+            clearLogsBtn.addEventListener('click', () => {
+                if (!confirm('Are you sure you want to permanently clear all transmission logs?')) return;
+                clearLogsBtn.disabled = true;
+                fetch('/api/clear-messages', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            appendLog(`Transmission logs cleared.`);
+                        } else {
+                            appendLog(`Error clearing logs: ${data.error}`, true);
+                        }
+                    })
+                    .catch(err => appendLog(`Network error clearing logs: ${err.message}`, true))
+                    .finally(() => {
+                        clearLogsBtn.disabled = false;
+                    });
+            });
+
+            // Phone Search event listeners
+            const phoneSearchInput = document.getElementById('phone-search');
+            const phoneSearchClearBtn = document.getElementById('phone-search-clear');
+
+            phoneSearchInput.addEventListener('input', () => {
+                const val = phoneSearchInput.value;
+                phoneSearchQuery = val;
+
+                if (val) {
+                    phoneSearchClearBtn.style.display = 'block';
+                } else {
+                    phoneSearchClearBtn.style.display = 'none';
+                }
+                updatePhonesUI();
+            });
+
+            phoneSearchClearBtn.addEventListener('click', () => {
+                phoneSearchInput.value = '';
+                phoneSearchQuery = '';
                 phoneSearchClearBtn.style.display = 'none';
-            }
-            updatePhonesUI();
-        });
+                updatePhonesUI();
+            });
 
-        phoneSearchClearBtn.addEventListener('click', () => {
-            phoneSearchInput.value = '';
-            phoneSearchQuery = '';
-            phoneSearchClearBtn.style.display = 'none';
-            updatePhonesUI();
-        });
+            // Search & Pagination event listeners
+            const logSearchInput = document.getElementById('log-search');
+            const searchClearBtn = document.getElementById('search-clear');
+            let searchTimeout = null;
 
-        // Search & Pagination event listeners
-        const logSearchInput = document.getElementById('log-search');
-        const searchClearBtn = document.getElementById('search-clear');
-        let searchTimeout = null;
+            logSearchInput.addEventListener('input', () => {
+                const val = logSearchInput.value;
+                searchQuery = val;
 
-        logSearchInput.addEventListener('input', () => {
-            const val = logSearchInput.value;
-            searchQuery = val;
+                if (val) {
+                    searchClearBtn.style.display = 'block';
+                } else {
+                    searchClearBtn.style.display = 'none';
+                }
 
-            if (val) {
-                searchClearBtn.style.display = 'block';
-            } else {
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+                searchTimeout = setTimeout(() => {
+                    currentPage = 1;
+                    fetchMessagesFromServer();
+                }, 250);
+            });
+
+            searchClearBtn.addEventListener('click', () => {
+                logSearchInput.value = '';
+                searchQuery = '';
                 searchClearBtn.style.display = 'none';
-            }
-
-            if (searchTimeout) {
-                clearTimeout(searchTimeout);
-            }
-            searchTimeout = setTimeout(() => {
                 currentPage = 1;
                 fetchMessagesFromServer();
-            }, 250);
-        });
-
-        searchClearBtn.addEventListener('click', () => {
-            logSearchInput.value = '';
-            searchQuery = '';
-            searchClearBtn.style.display = 'none';
-            currentPage = 1;
-            fetchMessagesFromServer();
-        });
-
-        prevPageBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                fetchMessagesFromServer();
-            }
-        });
-
-        nextPageBtn.addEventListener('click', () => {
-            const totalPages = Math.ceil(totalMessagesCount / pageSize) || 1;
-            if (currentPage < totalPages) {
-                currentPage++;
-                fetchMessagesFromServer();
-            }
-        });
-
-        pageSizeSelect.addEventListener('change', (e) => {
-            pageSize = parseInt(e.target.value) || 25;
-            currentPage = 1;
-            fetchMessagesFromServer();
-        });
-
-        // Filter event listeners
-        const filterSenderSelect = document.getElementById('filter-sender');
-        const filterStatusSelect = document.getElementById('filter-status');
-
-        filterSenderSelect.addEventListener('change', (e) => {
-            filterSender = e.target.value;
-            currentPage = 1;
-            fetchMessagesFromServer();
-        });
-
-        filterStatusSelect.addEventListener('change', (e) => {
-            filterStatus = e.target.value;
-            currentPage = 1;
-            fetchMessagesFromServer();
-        });
-
-        // Update sender filter dropdown based on registered phones list
-        function updateSenderFilterDropdown() {
-            if (!filterSenderSelect) return;
-            const currentlySelected = filterSenderSelect.value;
-
-            const numbers = new Set();
-            phones.forEach(p => {
-                if (p.sim1Number) numbers.add(p.sim1Number.trim());
-                if (p.isDualSim && p.sim2Number) numbers.add(p.sim2Number.trim());
             });
 
-            const sortedNumbers = Array.from(numbers).sort();
-
-            let optionsHtml = '<option value="">All Senders</option>';
-            sortedNumbers.forEach(num => {
-                const dev = phones.find(p => p.sim1Number === num || (p.isDualSim && p.sim2Number === num));
-                const label = dev ? `${num} (${dev.deviceModel})` : num;
-                optionsHtml += `<option value="${esc(num)}">${esc(label)}</option>`;
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    fetchMessagesFromServer();
+                }
             });
 
-            filterSenderSelect.innerHTML = optionsHtml;
+            nextPageBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(totalMessagesCount / pageSize) || 1;
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    fetchMessagesFromServer();
+                }
+            });
 
-            if (sortedNumbers.includes(currentlySelected)) {
-                filterSenderSelect.value = currentlySelected;
-            } else if (currentlySelected) {
-                const opt = document.createElement('option');
-                opt.value = currentlySelected;
-                opt.textContent = currentlySelected;
-                opt.selected = true;
-                filterSenderSelect.appendChild(opt);
-            } else {
-                filterSenderSelect.value = '';
-                filterSender = '';
+            pageSizeSelect.addEventListener('change', (e) => {
+                pageSize = parseInt(e.target.value) || 25;
+                currentPage = 1;
+                fetchMessagesFromServer();
+            });
+
+            // Filter event listeners
+            const filterSenderSelect = document.getElementById('filter-sender');
+            const filterStatusSelect = document.getElementById('filter-status');
+
+            filterSenderSelect.addEventListener('change', (e) => {
+                filterSender = e.target.value;
+                currentPage = 1;
+                fetchMessagesFromServer();
+            });
+
+            filterStatusSelect.addEventListener('change', (e) => {
+                filterStatus = e.target.value;
+                currentPage = 1;
+                fetchMessagesFromServer();
+            });
+
+            // Update sender filter dropdown based on registered phones list
+            let lastSenderFilterKey = null;
+            function updateSenderFilterDropdown() {
+                if (!filterSenderSelect) return;
+                const currentlySelected = filterSenderSelect.value;
+
+                const numbers = new Set();
+                phones.forEach(p => {
+                    if (p.sim1Number) numbers.add(p.sim1Number.trim());
+                    if (p.isDualSim && p.sim2Number) numbers.add(p.sim2Number.trim());
+                });
+
+                const sortedNumbers = Array.from(numbers).sort();
+                const currentKey = sortedNumbers.join(',') + '|' + phones.map(p => `${p.deviceId}-${p.online}-${p.deviceModel}`).join(',');
+                if (currentKey === lastSenderFilterKey && filterSenderSelect.value === currentlySelected) {
+                    return;
+                }
+                lastSenderFilterKey = currentKey;
+
+                let optionsHtml = '<option value="">All Senders</option>';
+                sortedNumbers.forEach(num => {
+                    const dev = phones.find(p => p.sim1Number === num || (p.isDualSim && p.sim2Number === num));
+                    const label = dev ? `${num} (${dev.deviceModel})` : num;
+                    optionsHtml += `<option value="${esc(num)}">${esc(label)}</option>`;
+                });
+
+                filterSenderSelect.innerHTML = optionsHtml;
+
+                if (sortedNumbers.includes(currentlySelected)) {
+                    filterSenderSelect.value = currentlySelected;
+                } else if (currentlySelected) {
+                    const opt = document.createElement('option');
+                    opt.value = currentlySelected;
+                    opt.textContent = currentlySelected;
+                    opt.selected = true;
+                    filterSenderSelect.appendChild(opt);
+                } else {
+                    filterSenderSelect.value = '';
+                    filterSender = '';
+                }
             }
-        }
 
-        // Retry a failed message immediately using type: 'RESEND'
-        function retryMessage(msgId) {
-            const msg = displayedMessages.find(m => m.id === msgId);
-            if (!msg) {
-                appendLog('Failed to retry: message details not found in active list.', true);
-                return;
-            }
+            // Retry a failed message immediately using type: 'RESEND'
+            function retryMessage(msgId) {
+                const msg = displayedMessages.find(m => m.id === msgId);
+                if (!msg) {
+                    appendLog('Failed to retry: message details not found in active list.', true);
+                    return;
+                }
 
-            // Disable button immediately to prevent duplicate retries
-            const btn = document.querySelector(`button[onclick="retryMessage('${msgId}')"]`);
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'Retried';
-                btn.style.opacity = '0.5';
-                btn.style.cursor = 'not-allowed';
-            }
+                // Disable button immediately to prevent duplicate retries
+                const btn = document.querySelector(`button[onclick="retryMessage('${msgId}')"]`);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Retried';
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                }
 
-            appendLog(`Retrying message to ${msg.to} (original ID: ${msgId})...`);
+                appendLog(`Retrying message to ${msg.to} (original ID: ${msgId})...`);
 
-            fetch('/api/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    to: msg.to,
-                    message: msg.message,
-                    sim: msg.sim,
-                    deviceId: msg.deviceId,
-                    type: 'RESEND',
-                    retriedFromId: msgId
+                fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: msg.to,
+                        message: msg.message,
+                        sim: msg.sim,
+                        deviceId: msg.deviceId,
+                        type: 'RESEND',
+                        retriedFromId: msgId
+                    })
                 })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.error) {
-                        appendLog(`Retry Send Error: ${data.error}`, true);
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) {
+                            appendLog(`Retry Send Error: ${data.error}`, true);
+                            if (btn) {
+                                btn.disabled = false;
+                                btn.textContent = 'Retry';
+                                btn.style.opacity = '';
+                                btn.style.cursor = '';
+                            }
+                        } else {
+                            appendLog(`Retry SMS Request queued. ID: ${data.id}`);
+                        }
+                    })
+                    .catch(err => {
+                        appendLog(`Network error retrying SMS: ${err.message}`, true);
                         if (btn) {
                             btn.disabled = false;
                             btn.textContent = 'Retry';
                             btn.style.opacity = '';
                             btn.style.cursor = '';
                         }
-                    } else {
-                        appendLog(`Retry SMS Request queued. ID: ${data.id}`);
-                    }
-                })
-                .catch(err => {
-                    appendLog(`Network error retrying SMS: ${err.message}`, true);
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.textContent = 'Retry';
-                        btn.style.opacity = '';
-                        btn.style.cursor = '';
-                    }
+                    });
+            }
+
+            // Collapsible sections initialization
+            const consoleCard = document.getElementById('console-card');
+            const consoleLogs = document.getElementById('console-logs');
+            const consoleHeader = document.getElementById('console-header');
+
+            const historyCard = document.getElementById('history-card');
+            const historyContent = document.getElementById('history-content');
+            const historyHeader = document.getElementById('history-header');
+
+            function initCollapsible() {
+                const consoleCollapsed = localStorage.getItem('console_collapsed') === 'true';
+                if (consoleCollapsed) {
+                    consoleCard.classList.add('collapsed');
+                    consoleLogs.classList.add('collapsed-content');
+                }
+
+                consoleHeader.addEventListener('click', () => {
+                    const isCollapsed = consoleCard.classList.toggle('collapsed');
+                    consoleLogs.classList.toggle('collapsed-content', isCollapsed);
+                    localStorage.setItem('console_collapsed', isCollapsed);
                 });
-        }
-
-        // Collapsible sections initialization
-        const consoleCard = document.getElementById('console-card');
-        const consoleLogs = document.getElementById('console-logs');
-        const consoleHeader = document.getElementById('console-header');
-
-        const historyCard = document.getElementById('history-card');
-        const historyContent = document.getElementById('history-content');
-        const historyHeader = document.getElementById('history-header');
-
-        function initCollapsible() {
-            const consoleCollapsed = localStorage.getItem('console_collapsed') === 'true';
-            if (consoleCollapsed) {
-                consoleCard.classList.add('collapsed');
-                consoleLogs.classList.add('collapsed-content');
             }
 
-            consoleHeader.addEventListener('click', () => {
-                const isCollapsed = consoleCard.classList.toggle('collapsed');
-                consoleLogs.classList.toggle('collapsed-content', isCollapsed);
-                localStorage.setItem('console_collapsed', isCollapsed);
-            });
-        }
+            initCollapsible();
 
-        initCollapsible();
+            function initActionColumnToggle() {
+                const historyTable = document.getElementById('history-table');
+                const toggleActionCheckbox = document.getElementById('toggle-action-column');
 
-        function initActionColumnToggle() {
-            const historyTable = document.getElementById('history-table');
-            const toggleActionCheckbox = document.getElementById('toggle-action-column');
+                const savedState = localStorage.getItem('action_column_visible');
+                const isVisible = savedState === 'true'; // defaults to false (collapsed by default)
 
-            const savedState = localStorage.getItem('action_column_visible');
-            const isVisible = savedState === 'true'; // defaults to false (collapsed by default)
-
-            toggleActionCheckbox.checked = isVisible;
-            if (isVisible) {
-                historyTable.classList.remove('hide-action-column');
-            } else {
-                historyTable.classList.add('hide-action-column');
-            }
-
-            toggleActionCheckbox.addEventListener('change', () => {
-                const show = toggleActionCheckbox.checked;
-                if (show) {
+                toggleActionCheckbox.checked = isVisible;
+                if (isVisible) {
                     historyTable.classList.remove('hide-action-column');
                 } else {
                     historyTable.classList.add('hide-action-column');
                 }
-                localStorage.setItem('action_column_visible', show);
-            });
-        }
 
-        initActionColumnToggle();
-
-        // Initialize websocket connection
-        connect();
-
-        // Initialize bulk sending rate info displays
-        updateBulkInfoUI(0);
-
-        // Periodically refresh relative times in the Registered Phones list
-        setInterval(updatePhonesUI, 10000);
-
-        // Settings dialog/modal controls
-        const gearBtn = document.getElementById('gear-btn');
-        const settingsDialog = document.getElementById('settings-dialog');
-        const closeSettingsBtn = document.getElementById('close-settings-btn');
-        const wsUrlDisplay = document.getElementById('ws-url-display');
-        const copyWsBtn = document.getElementById('copy-ws-btn');
-
-        gearBtn.addEventListener('click', () => {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            wsUrlDisplay.textContent = `${protocol}//${window.location.host}`;
-            settingsDialog.showModal();
-        });
-
-        closeSettingsBtn.addEventListener('click', () => {
-            settingsDialog.close();
-        });
-
-        // Fallback for light dismiss on older browsers/Safari
-        if (!('closedBy' in HTMLDialogElement.prototype)) {
-            settingsDialog.addEventListener('click', (event) => {
-                if (event.target !== settingsDialog) return;
-                const rect = settingsDialog.getBoundingClientRect();
-                const isDialogContent = (
-                    rect.top <= event.clientY &&
-                    event.clientY <= rect.top + rect.height &&
-                    rect.left <= event.clientX &&
-                    event.clientX <= rect.left + rect.width
-                );
-                if (!isDialogContent) {
-                    settingsDialog.close();
-                }
-            });
-        }
-
-        // Copy WebSocket URL feature with feedback micro-animation
-        copyWsBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(wsUrlDisplay.textContent).then(() => {
-                const originalText = copyWsBtn.textContent;
-                copyWsBtn.textContent = 'Copied!';
-                copyWsBtn.style.borderColor = 'var(--success)';
-                copyWsBtn.style.color = 'var(--success)';
-                setTimeout(() => {
-                    copyWsBtn.textContent = originalText;
-                    copyWsBtn.style.borderColor = '';
-                    copyWsBtn.style.color = '';
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-            });
-        });
-
-        // Helper: create tooltip HTML
-        function tooltip(text) {
-            return `<span class="stat-tooltip-wrap"><span class="stat-tooltip-icon">?</span><span class="stat-tooltip-text">${text}</span></span>`;
-        }
-
-        // Helper: format time ago from ISO string
-        function formatAgeFromISO(isoStr) {
-            if (!isoStr) return 'N/A';
-            const diffMs = Date.now() - new Date(isoStr).getTime();
-            const mins = Math.floor(diffMs / 60000);
-            const hours = Math.floor(mins / 60);
-            const days = Math.floor(hours / 24);
-            if (days > 0) return `${days}d ${hours % 24}h ago`;
-            if (hours > 0) return `${hours}h ${mins % 60}m ago`;
-            return `${mins}m ago`;
-        }
-
-        // Fetch and render message transmission statistics
-        function fetchAndRenderStats(force = false) {
-            const statsContainer = document.getElementById('stats-container');
-            if (!statsContainer) return;
-
-            const timeRangeSelect = document.getElementById('stats-time-range');
-            const range = timeRangeSelect ? timeRangeSelect.value : '24h';
-            const url = `/api/message-stats?range=${range}${force ? '&refresh=1' : ''}`;
-
-            const refreshBtn = document.getElementById('refresh-stats-btn');
-            if (refreshBtn) {
-                refreshBtn.disabled = true;
-                refreshBtn.textContent = '⏳ Loading...';
+                toggleActionCheckbox.addEventListener('change', () => {
+                    const show = toggleActionCheckbox.checked;
+                    if (show) {
+                        historyTable.classList.remove('hide-action-column');
+                    } else {
+                        historyTable.classList.add('hide-action-column');
+                    }
+                    localStorage.setItem('action_column_visible', show);
+                });
             }
 
-            statsContainer.innerHTML = `<div class="no-data" style="color: var(--info); padding: 1.5rem 1rem;">
+            initActionColumnToggle();
+
+            // Initialize websocket connection
+            connect();
+
+            // Initialize bulk sending rate info displays
+            updateBulkInfoUI(0);
+
+            // Periodically refresh relative times in the Registered Phones list
+            setInterval(updatePhonesUI, 10000);
+
+            // Settings dialog/modal controls
+            const gearBtn = document.getElementById('gear-btn');
+            const settingsDialog = document.getElementById('settings-dialog');
+            const closeSettingsBtn = document.getElementById('close-settings-btn');
+            const wsUrlDisplay = document.getElementById('ws-url-display');
+            const copyWsBtn = document.getElementById('copy-ws-btn');
+
+            gearBtn.addEventListener('click', () => {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                wsUrlDisplay.textContent = `${protocol}//${window.location.host}`;
+                settingsDialog.showModal();
+            });
+
+            closeSettingsBtn.addEventListener('click', () => {
+                settingsDialog.close();
+            });
+
+            // Fallback for light dismiss on older browsers/Safari
+            if (!('closedBy' in HTMLDialogElement.prototype)) {
+                settingsDialog.addEventListener('click', (event) => {
+                    if (event.target !== settingsDialog) return;
+                    const rect = settingsDialog.getBoundingClientRect();
+                    const isDialogContent = (
+                        rect.top <= event.clientY &&
+                        event.clientY <= rect.top + rect.height &&
+                        rect.left <= event.clientX &&
+                        event.clientX <= rect.left + rect.width
+                    );
+                    if (!isDialogContent) {
+                        settingsDialog.close();
+                    }
+                });
+            }
+
+            // Copy WebSocket URL feature with feedback micro-animation
+            copyWsBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(wsUrlDisplay.textContent).then(() => {
+                    const originalText = copyWsBtn.textContent;
+                    copyWsBtn.textContent = 'Copied!';
+                    copyWsBtn.style.borderColor = 'var(--success)';
+                    copyWsBtn.style.color = 'var(--success)';
+                    setTimeout(() => {
+                        copyWsBtn.textContent = originalText;
+                        copyWsBtn.style.borderColor = '';
+                        copyWsBtn.style.color = '';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            });
+
+            // Helper: create tooltip HTML
+            function tooltip(text) {
+                return `<span class="stat-tooltip-wrap"><span class="stat-tooltip-icon">?</span><span class="stat-tooltip-text">${text}</span></span>`;
+            }
+
+            // Helper: format time ago from ISO string
+            function formatAgeFromISO(isoStr) {
+                if (!isoStr) return 'N/A';
+                const diffMs = Date.now() - new Date(isoStr).getTime();
+                const mins = Math.floor(diffMs / 60000);
+                const hours = Math.floor(mins / 60);
+                const days = Math.floor(hours / 24);
+                if (days > 0) return `${days}d ${hours % 24}h ago`;
+                if (hours > 0) return `${hours}h ${mins % 60}m ago`;
+                return `${mins}m ago`;
+            }
+
+            // Fetch and render message transmission statistics
+            function fetchAndRenderStats(force = false) {
+                const statsContainer = document.getElementById('stats-container');
+                if (!statsContainer) return;
+
+                const timeRangeSelect = document.getElementById('stats-time-range');
+                const range = timeRangeSelect ? timeRangeSelect.value : '24h';
+                const url = `/api/message-stats?range=${range}${force ? '&refresh=1' : ''}`;
+
+                const refreshBtn = document.getElementById('refresh-stats-btn');
+                if (refreshBtn) {
+                    refreshBtn.disabled = true;
+                    refreshBtn.textContent = '⏳ Loading...';
+                }
+
+                statsContainer.innerHTML = `<div class="no-data" style="color: var(--info); padding: 1.5rem 1rem;">
                 <div style="font-size: 1.2rem; margin-bottom: 0.35rem;">⏳</div>
                 <div>Calculating statistics (${range})...</div>
             </div>`;
 
-            fetch(url)
-                .then(async res => {
-                    if (!res.ok) {
-                        const text = await res.text().catch(() => '');
-                        if (res.status === 504 || text.includes('504 Gateway Time-out') || text.includes('Gateway Time-out')) {
-                            throw new Error('Server timed out (504). Processing exceeded 60s. Please choose a shorter range like Last 24 Hours or 7 Days.');
-                        } else if (res.status === 502) {
-                            throw new Error('502 Bad Gateway. Server is unavailable or restarting.');
+                fetch(url)
+                    .then(async res => {
+                        if (!res.ok) {
+                            const text = await res.text().catch(() => '');
+                            if (res.status === 504 || text.includes('504 Gateway Time-out') || text.includes('Gateway Time-out')) {
+                                throw new Error('Server timed out (504). Processing exceeded 60s. Please choose a shorter range like Last 24 Hours or 7 Days.');
+                            } else if (res.status === 502) {
+                                throw new Error('502 Bad Gateway. Server is unavailable or restarting.');
+                            }
+                            throw new Error(`Server returned HTTP ${res.status}`);
                         }
-                        throw new Error(`Server returned HTTP ${res.status}`);
-                    }
-                    const contentType = res.headers.get('content-type') || '';
-                    if (!contentType.includes('application/json')) {
-                        throw new Error('Server returned HTML/unexpected response instead of JSON.');
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    if (data.error) {
-                        statsContainer.innerHTML = `<div class="no-data" style="color: var(--danger);">Error loading stats: ${esc(data.error)}</div>`;
-                        return;
-                    }
+                        const contentType = res.headers.get('content-type') || '';
+                        if (!contentType.includes('application/json')) {
+                            throw new Error('Server returned HTML/unexpected response instead of JSON.');
+                        }
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            statsContainer.innerHTML = `<div class="no-data" style="color: var(--danger);">Error loading stats: ${esc(data.error)}</div>`;
+                            return;
+                        }
 
-                    const total = data.total || 0;
-                    if (total === 0) {
-                        statsContainer.innerHTML = `<div class="no-data">No transmission logs available for stats.</div>`;
-                        return;
-                    }
+                        const total = data.total || 0;
+                        if (total === 0) {
+                            statsContainer.innerHTML = `<div class="no-data">No transmission logs available for stats.</div>`;
+                            return;
+                        }
 
-                    // Process status counts
-                    let delivered = 0, failed = 0, sent = 0, pending = 0;
-                    data.statusStats.forEach(s => {
-                        if (s._id === 'delivered') delivered = s.count;
-                        else if (s._id === 'failed') failed = s.count;
-                        else if (s._id === 'sent') sent = s.count;
-                        else if (s._id === 'pending') pending = s.count;
-                    });
+                        // Process status counts
+                        let delivered = 0, failed = 0, sent = 0, pending = 0;
+                        data.statusStats.forEach(s => {
+                            if (s._id === 'delivered') delivered = s.count;
+                            else if (s._id === 'failed') failed = s.count;
+                            else if (s._id === 'sent') sent = s.count;
+                            else if (s._id === 'pending') pending = s.count;
+                        });
 
-                    const successRate = total > 0 ? ((delivered / total) * 100).toFixed(1) : '0.0';
-                    const nonFailedRate = total > 0 ? (((total - failed) / total) * 100).toFixed(1) : '0.0';
-                    const uniqueRecipients = data.uniqueRecipients || 0;
+                        const successRate = total > 0 ? ((delivered / total) * 100).toFixed(1) : '0.0';
+                        const nonFailedRate = total > 0 ? (((total - failed) / total) * 100).toFixed(1) : '0.0';
+                        const uniqueRecipients = data.uniqueRecipients || 0;
 
-                    // ──────────────────────────────────────────
-                    // 1. OVERVIEW GRID (combined)
-                    // ──────────────────────────────────────────
-                    let html = `
+                        // ──────────────────────────────────────────
+                        // 1. OVERVIEW GRID (combined)
+                        // ──────────────────────────────────────────
+                        let html = `
                         <div class="stats-section-header">
                             <span>📊 Overview</span>
                             ${tooltip('High-level summary of all message transmissions.<br><br><b>Delivered Rate</b> = Delivered ÷ Total<br><b>Non-Failed Rate</b> = (Total − Failed) ÷ Total<br><br><b>Sent (No DR)</b> — Carrier accepted the SMS but never confirmed delivery to the recipient.<br><br><b>Pending/Stuck</b> — Messages dispatched to a phone that never reported any outcome.')}
@@ -2998,21 +3116,21 @@
                         </div>
                     `;
 
-                    // Most recent pending message
-                    if (data.newestPending) {
-                        html += `
+                        // Most recent pending message
+                        if (data.newestPending) {
+                            html += `
                             <div style="font-size: 10px; color: var(--text-muted); padding: 0.3rem 0.4rem; background: rgba(251, 146, 60, 0.05); border: 1px solid rgba(251, 146, 60, 0.15); border-radius: 4px; display: flex; align-items: center; gap: 0.3rem;">
                                 <span>⏳</span>
                                 <span>Most recent pending message: <strong style="color: #fb923c;">${formatAgeFromISO(data.newestPending)}</strong> (${new Date(data.newestPending).toLocaleString()})</span>
                             </div>
                         `;
-                    }
+                        }
 
-                    // ──────────────────────────────────────────
-                    // 3. PER-SENDER (SIM NUMBER) SUCCESS RATE
-                    // ──────────────────────────────────────────
-                    if (data.senderStats && data.senderStats.length > 0) {
-                        html += `
+                        // ──────────────────────────────────────────
+                        // 3. PER-SENDER (SIM NUMBER) SUCCESS RATE
+                        // ──────────────────────────────────────────
+                        if (data.senderStats && data.senderStats.length > 0) {
+                            html += `
                             <div style="margin-top: 0.5rem;">
                                 <div class="stats-section-header">
                                     <span>📱 Per-Sender SIM Performance</span>
@@ -3035,10 +3153,10 @@
                                         </thead>
                                         <tbody id="sender-stats-tbody">
                                             ${data.senderStats.map(s => {
-                            const sRate = s.total > 0 ? ((s.delivered / s.total) * 100).toFixed(1) : '0.0';
-                            const sNfRate = s.total > 0 ? (((s.total - s.failed) / s.total) * 100).toFixed(1) : '0.0';
-                            const rateColor = parseFloat(sRate) >= 70 ? 'var(--success)' : parseFloat(sRate) >= 40 ? 'var(--warning)' : 'var(--danger)';
-                            return `
+                                const sRate = s.total > 0 ? ((s.delivered / s.total) * 100).toFixed(1) : '0.0';
+                                const sNfRate = s.total > 0 ? (((s.total - s.failed) / s.total) * 100).toFixed(1) : '0.0';
+                                const rateColor = parseFloat(sRate) >= 70 ? 'var(--success)' : parseFloat(sRate) >= 40 ? 'var(--warning)' : 'var(--danger)';
+                                return `
                                                     <tr data-sender="${esc(s._id)}">
                                                         <td style="padding: 0.3rem 0.4rem; font-weight: 600; font-family: 'JetBrains Mono', monospace;">${esc(s._id)}</td>
                                                         <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--text-muted);">${s.total}</td>
@@ -3050,19 +3168,19 @@
                                                         <td style="padding: 0.3rem 0.4rem; text-align: right; font-weight: 600; color: #22d3ee;">${sNfRate}%</td>
                                                     </tr>
                                                 `;
-                        }).join('')}
+                            }).join('')}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         `;
-                    }
+                        }
 
-                    // ──────────────────────────────────────────
-                    // 4. DAILY TIMELINE
-                    // ──────────────────────────────────────────
-                    if (data.dailyStats && data.dailyStats.length > 0) {
-                        html += `
+                        // ──────────────────────────────────────────
+                        // 4. DAILY TIMELINE
+                        // ──────────────────────────────────────────
+                        if (data.dailyStats && data.dailyStats.length > 0) {
+                            html += `
                             <div style="margin-top: 0.5rem;">
                                 <div class="stats-section-header">
                                     <span>📅 Daily Transmission Timeline</span>
@@ -3084,9 +3202,9 @@
                                         </thead>
                                         <tbody>
                                             ${data.dailyStats.map(day => {
-                            const rate = day.total > 0 ? ((day.delivered / day.total) * 100).toFixed(0) : '0';
-                            const nfRate = day.total > 0 ? (((day.total - day.failed) / day.total) * 100).toFixed(0) : '0';
-                            return `
+                                const rate = day.total > 0 ? ((day.delivered / day.total) * 100).toFixed(0) : '0';
+                                const nfRate = day.total > 0 ? (((day.total - day.failed) / day.total) * 100).toFixed(0) : '0';
+                                return `
                                                     <tr>
                                                         <td style="padding: 0.3rem 0.4rem; font-weight: 500;">${esc(day._id)}</td>
                                                         <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--text-muted);">${day.total}</td>
@@ -3098,20 +3216,20 @@
                                                         <td style="padding: 0.3rem 0.4rem; text-align: right; font-weight: 600; color: #22d3ee;">${nfRate}%</td>
                                                     </tr>
                                                 `;
-                        }).reverse().join('')}
+                            }).reverse().join('')}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         `;
-                    }
+                        }
 
-                    // ──────────────────────────────────────────
-                    // 5. HOURLY THROUGHPUT
-                    // ──────────────────────────────────────────
-                    if (data.hourlyStats && data.hourlyStats.length > 0) {
-                        const latestDay = data.dailyStats && data.dailyStats.length > 0 ? data.dailyStats[data.dailyStats.length - 1]._id : 'Latest Day';
-                        html += `
+                        // ──────────────────────────────────────────
+                        // 5. HOURLY THROUGHPUT
+                        // ──────────────────────────────────────────
+                        if (data.hourlyStats && data.hourlyStats.length > 0) {
+                            const latestDay = data.dailyStats && data.dailyStats.length > 0 ? data.dailyStats[data.dailyStats.length - 1]._id : 'Latest Day';
+                            html += `
                             <div style="margin-top: 0.5rem;">
                                 <div class="stats-section-header">
                                     <span>🕐 Hourly Throughput (${esc(latestDay)})</span>
@@ -3131,9 +3249,9 @@
                                         </thead>
                                         <tbody>
                                             ${data.hourlyStats.map(h => {
-                            const hRate = h.total > 0 ? ((h.delivered / h.total) * 100).toFixed(0) : '0';
-                            const hNfRate = h.total > 0 ? (((h.total - h.failed) / h.total) * 100).toFixed(0) : '0';
-                            return `
+                                const hRate = h.total > 0 ? ((h.delivered / h.total) * 100).toFixed(0) : '0';
+                                const hNfRate = h.total > 0 ? (((h.total - h.failed) / h.total) * 100).toFixed(0) : '0';
+                                return `
                                                     <tr>
                                                         <td style="padding: 0.3rem 0.4rem; font-weight: 500; font-family: 'JetBrains Mono', monospace;">${esc(h._id)}:00</td>
                                                         <td style="padding: 0.3rem 0.4rem; text-align: right; color: var(--text-muted);">${h.total}</td>
@@ -3143,36 +3261,36 @@
                                                         <td style="padding: 0.3rem 0.4rem; text-align: right; font-weight: 600; color: #22d3ee;">${hNfRate}%</td>
                                                     </tr>
                                                 `;
-                        }).join('')}
+                            }).join('')}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         `;
-                    }
-
-                    // ──────────────────────────────────────────
-                    // 6. FAILURE REASON DISTRIBUTION
-                    // ──────────────────────────────────────────
-                    if (data.failureStats && data.failureStats.length > 0) {
-                        // Group "No phone SIM mapped to sender: XXXXX" entries into one
-                        const groupedFailures = [];
-                        let simMappedCount = 0;
-                        data.failureStats.forEach(f => {
-                            const label = f._id || '';
-                            if (label.startsWith('No phone SIM mapped to sender:')) {
-                                simMappedCount += f.count;
-                            } else {
-                                groupedFailures.push({ label: label || 'Unknown/Generic', count: f.count });
-                            }
-                        });
-                        if (simMappedCount > 0) {
-                            groupedFailures.push({ label: 'No phone SIM mapped to sender (combined)', count: simMappedCount });
                         }
-                        // Sort by count descending
-                        groupedFailures.sort((a, b) => b.count - a.count);
 
-                        html += `
+                        // ──────────────────────────────────────────
+                        // 6. FAILURE REASON DISTRIBUTION
+                        // ──────────────────────────────────────────
+                        if (data.failureStats && data.failureStats.length > 0) {
+                            // Group "No phone SIM mapped to sender: XXXXX" entries into one
+                            const groupedFailures = [];
+                            let simMappedCount = 0;
+                            data.failureStats.forEach(f => {
+                                const label = f._id || '';
+                                if (label.startsWith('No phone SIM mapped to sender:')) {
+                                    simMappedCount += f.count;
+                                } else {
+                                    groupedFailures.push({ label: label || 'Unknown/Generic', count: f.count });
+                                }
+                            });
+                            if (simMappedCount > 0) {
+                                groupedFailures.push({ label: 'No phone SIM mapped to sender (combined)', count: simMappedCount });
+                            }
+                            // Sort by count descending
+                            groupedFailures.sort((a, b) => b.count - a.count);
+
+                            html += `
                             <div style="margin-top: 0.5rem;">
                                 <div class="stats-section-header">
                                     <span>⚠️ Failure Reason Distribution</span>
@@ -3180,8 +3298,8 @@
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 0.35rem; max-height: 220px; overflow-y: auto; padding-right: 0.2rem;">
                                     ${groupedFailures.map(f => {
-                            const pct = ((f.count / failed) * 100).toFixed(1);
-                            return `
+                                const pct = ((f.count / failed) * 100).toFixed(1);
+                                return `
                                             <div style="display: flex; flex-direction: column; gap: 0.15rem; background: rgba(239, 68, 68, 0.03); border: 1px solid rgba(239, 68, 68, 0.1); border-radius: 4px; padding: 0.35rem 0.5rem;">
                                                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; gap: 0.5rem;">
                                                     <span style="font-weight: 600; color: var(--text);">${esc(f.label)}</span>
@@ -3192,20 +3310,20 @@
                                                 </div>
                                             </div>
                                         `;
-                        }).join('')}
+                            }).join('')}
                                 </div>
                             </div>
                         `;
-                    }
+                        }
 
-                    // ──────────────────────────────────────────
-                    // 7. SIM SLOT & DEVICE BREAKDOWN
-                    // ──────────────────────────────────────────
-                    html += `<div style="margin-top: 0.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">`;
+                        // ──────────────────────────────────────────
+                        // 7. SIM SLOT & DEVICE BREAKDOWN
+                        // ──────────────────────────────────────────
+                        html += `<div style="margin-top: 0.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">`;
 
-                    // SIM Slot Usage
-                    if (data.simStats && data.simStats.length > 0) {
-                        html += `
+                        // SIM Slot Usage
+                        if (data.simStats && data.simStats.length > 0) {
+                            html += `
                             <div>
                                 <div class="stats-section-header">
                                     <span>SIM Slot Usage</span>
@@ -3213,23 +3331,23 @@
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                                     ${data.simStats.map(s => {
-                            const sRate = s.total > 0 ? ((s.delivered / s.total) * 100).toFixed(0) : '0';
-                            const sNfRate = s.total > 0 ? (((s.total - s.failed) / s.total) * 100).toFixed(0) : '0';
-                            return `
+                                const sRate = s.total > 0 ? ((s.delivered / s.total) * 100).toFixed(0) : '0';
+                                const sNfRate = s.total > 0 ? (((s.total - s.failed) / s.total) * 100).toFixed(0) : '0';
+                                return `
                                             <div style="font-size: 10px; display: flex; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 0.25rem 0.4rem; border: 1px solid var(--border); border-radius: 3px;">
                                                 <span style="color: var(--text-muted);">SIM ${s._id}:</span>
                                                 <span style="font-weight: 600; color: var(--text);">${s.total} <span style="font-size:9px; color: #a855f7; font-weight:normal;">(${sRate}% del</span> <span style="font-size:9px; color: #22d3ee; font-weight:normal;">${sNfRate}% nf)</span></span>
                                             </div>
                                         `;
-                        }).join('')}
+                            }).join('')}
                                 </div>
                             </div>
                         `;
-                    }
+                        }
 
-                    // Device Breakdown (all devices, no truncation)
-                    if (data.deviceStats && data.deviceStats.length > 0) {
-                        html += `
+                        // Device Breakdown (all devices, no truncation)
+                        if (data.deviceStats && data.deviceStats.length > 0) {
+                            html += `
                             <div>
                                 <div class="stats-section-header">
                                     <span>Device Performance</span>
@@ -3237,81 +3355,81 @@
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 0.25rem; max-height: 120px; overflow-y: auto;">
                                     ${data.deviceStats.map(d => {
-                            const dRate = d.total > 0 ? ((d.delivered / d.total) * 100).toFixed(0) : '0';
-                            const dNfRate = d.total > 0 ? (((d.total - d.failed) / d.total) * 100).toFixed(0) : '0';
-                            const model = d._id || 'Unknown';
-                            return `
+                                const dRate = d.total > 0 ? ((d.delivered / d.total) * 100).toFixed(0) : '0';
+                                const dNfRate = d.total > 0 ? (((d.total - d.failed) / d.total) * 100).toFixed(0) : '0';
+                                const model = d._id || 'Unknown';
+                                return `
                                             <div style="font-size: 10px; display: flex; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 0.25rem 0.4rem; border: 1px solid var(--border); border-radius: 3px;">
                                                 <span style="color: var(--text-muted);">${esc(model)}</span>
                                                 <span style="font-weight: 600; color: var(--text);">${d.total} <span style="font-size:9px; color: #a855f7; font-weight:normal;">(${dRate}% del</span> <span style="font-size:9px; color: #22d3ee; font-weight:normal;">${dNfRate}% nf)</span></span>
                                             </div>
                                         `;
-                        }).join('')}
+                            }).join('')}
                                 </div>
                             </div>
                         `;
-                    }
+                        }
 
-                    html += `</div>`;
+                        html += `</div>`;
 
-                    statsContainer.innerHTML = html;
+                        statsContainer.innerHTML = html;
 
-                    // Wire up sender search filter
-                    const senderSearchInput = document.getElementById('sender-search-input');
-                    if (senderSearchInput) {
-                        senderSearchInput.addEventListener('input', function () {
-                            const query = this.value.toLowerCase();
-                            const rows = document.querySelectorAll('#sender-stats-tbody tr');
-                            rows.forEach(row => {
-                                const sender = (row.getAttribute('data-sender') || '').toLowerCase();
-                                row.style.display = sender.includes(query) ? '' : 'none';
+                        // Wire up sender search filter
+                        const senderSearchInput = document.getElementById('sender-search-input');
+                        if (senderSearchInput) {
+                            senderSearchInput.addEventListener('input', function () {
+                                const query = this.value.toLowerCase();
+                                const rows = document.querySelectorAll('#sender-stats-tbody tr');
+                                rows.forEach(row => {
+                                    const sender = (row.getAttribute('data-sender') || '').toLowerCase();
+                                    row.style.display = sender.includes(query) ? '' : 'none';
+                                });
                             });
-                        });
-                    }
-                })
-                .catch(err => {
-                    statsContainer.innerHTML = `
+                        }
+                    })
+                    .catch(err => {
+                        statsContainer.innerHTML = `
                         <div class="no-data" style="color: var(--danger); padding: 1.25rem 1rem;">
                             <div style="margin-bottom: 0.5rem;">⚠️ Failed to load stats: ${esc(err.message)}</div>
                             <button id="load-stats-btn" class="btn btn-secondary" style="font-size: 11px; padding: 0.25rem 0.6rem;">🔄 Retry</button>
                         </div>
                     `;
-                })
-                .finally(() => {
-                    if (refreshBtn) {
-                        refreshBtn.disabled = false;
-                        refreshBtn.textContent = '🔄 Refresh';
+                    })
+                    .finally(() => {
+                        if (refreshBtn) {
+                            refreshBtn.disabled = false;
+                            refreshBtn.textContent = '🔄 Refresh';
+                        }
+                    });
+            }
+
+            // Hook up stats refresh button
+            const refreshStatsBtn = document.getElementById('refresh-stats-btn');
+            if (refreshStatsBtn) {
+                refreshStatsBtn.addEventListener('click', () => {
+                    statsLoaded = true;
+                    fetchAndRenderStats(true);
+                });
+            }
+
+            // Hook up stats time range select change
+            const statsTimeRange = document.getElementById('stats-time-range');
+            if (statsTimeRange) {
+                statsTimeRange.addEventListener('change', () => {
+                    if (statsLoaded) {
+                        fetchAndRenderStats();
                     }
                 });
-        }
+            }
 
-        // Hook up stats refresh button
-        const refreshStatsBtn = document.getElementById('refresh-stats-btn');
-        if (refreshStatsBtn) {
-            refreshStatsBtn.addEventListener('click', () => {
-                statsLoaded = true;
-                fetchAndRenderStats(true);
-            });
-        }
-
-        // Hook up stats time range select change
-        const statsTimeRange = document.getElementById('stats-time-range');
-        if (statsTimeRange) {
-            statsTimeRange.addEventListener('change', () => {
-                if (statsLoaded) {
-                    fetchAndRenderStats();
+            // Hook up click on on-demand Load Stats button
+            document.addEventListener('click', (e) => {
+                if (e.target && (e.target.id === 'load-stats-btn' || e.target.closest('#load-stats-btn'))) {
+                    statsLoaded = true;
+                    fetchAndRenderStats(true);
                 }
             });
-        }
-
-        // Hook up click on on-demand Load Stats button
-        document.addEventListener('click', (e) => {
-            if (e.target && (e.target.id === 'load-stats-btn' || e.target.closest('#load-stats-btn'))) {
-                statsLoaded = true;
-                fetchAndRenderStats(true);
-            }
-        });
-    </script>
+        </script>
 </body>
 
 </html>
