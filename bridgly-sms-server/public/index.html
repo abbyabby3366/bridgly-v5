@@ -1353,10 +1353,10 @@
                             <select id="stats-time-range" class="form-input"
                                 style="width: auto; padding: 0.25rem 1.5rem 0.25rem 0.45rem; font-size: 10px; height: auto; min-height: 24px; background-position: right 4px center;">
                                 <option value="1h">Last Hour</option>
-                                <option value="24h">Last 24 Hours</option>
+                                <option value="24h" selected>Last 24 Hours</option>
                                 <option value="7d">Last 7 Days</option>
                                 <option value="30d">Last 30 Days</option>
-                                <option value="all" selected>All Time</option>
+                                <option value="all">All Time</option>
                             </select>
                             <button id="refresh-stats-btn" class="btn btn-secondary"
                                 style="padding: 0.25rem 0.45rem; font-size: 10px; line-height: 1; min-height: 24px;">
@@ -1378,7 +1378,14 @@
                         </button>
                     </div>
                     <div id="stats-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <div class="no-data">Loading statistics...</div>
+                        <div style="text-align: center; padding: 1.5rem 1rem; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.12); border-radius: 6px;">
+                            <div style="font-size: 1.3rem; margin-bottom: 0.4rem;">📊</div>
+                            <div style="font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 0.25rem;">Statistics on Demand</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 0.8rem;">Click below to load transmission statistics for the selected time range.</div>
+                            <button id="load-stats-btn" class="btn btn-primary" style="padding: 0.35rem 0.9rem; font-size: 11px; font-weight: 600;">
+                                📊 Load Statistics
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1516,6 +1523,7 @@
         let activeDeviceQueues = 0;
         let queueBreakdown = [];
         let phoneSearchQuery = '';
+        let statsLoaded = false;
 
         // State for backend-driven pagination and search
         let currentPage = 1;
@@ -1659,7 +1667,6 @@
                         updatePhonesUI();
                         updateQueueUI(data.queueLength);
                         fetchMessagesFromServer();
-                        fetchAndRenderStats();
                     } else if (data.type === 'phones_list') {
                         phones = data.phones || [];
                         updatePhonesUI();
@@ -1669,7 +1676,7 @@
                         currentPage = 1;
                         updateHistoryTableUI();
                         updatePaginationUI();
-                        fetchAndRenderStats();
+                        if (statsLoaded) fetchAndRenderStats(true);
                     } else if (data.type === 'message_new') {
                         totalMessagesCount++;
 
@@ -1695,14 +1702,12 @@
                             updateHistoryTableUI();
                         }
                         updatePaginationUI();
-                        fetchAndRenderStats();
                     } else if (data.type === 'message_update') {
                         const idx = displayedMessages.findIndex(m => m.id === data.message.id);
                         if (idx !== -1) {
                             displayedMessages[idx] = data.message;
                             updateHistoryTableUI();
                         }
-                        fetchAndRenderStats();
                     } else if (data.type === 'log') {
                         appendLog(data.log);
                     } else if (data.type === 'queue_status') {
@@ -2768,15 +2773,42 @@
         }
 
         // Fetch and render message transmission statistics
-        function fetchAndRenderStats() {
+        function fetchAndRenderStats(force = false) {
             const statsContainer = document.getElementById('stats-container');
             if (!statsContainer) return;
 
             const timeRangeSelect = document.getElementById('stats-time-range');
-            const range = timeRangeSelect ? timeRangeSelect.value : 'all';
+            const range = timeRangeSelect ? timeRangeSelect.value : '24h';
+            const url = `/api/message-stats?range=${range}${force ? '&refresh=1' : ''}`;
 
-            fetch(`/api/message-stats?range=${range}`)
-                .then(res => res.json())
+            const refreshBtn = document.getElementById('refresh-stats-btn');
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+                refreshBtn.textContent = '⏳ Loading...';
+            }
+
+            statsContainer.innerHTML = `<div class="no-data" style="color: var(--info); padding: 1.5rem 1rem;">
+                <div style="font-size: 1.2rem; margin-bottom: 0.35rem;">⏳</div>
+                <div>Calculating statistics (${range})...</div>
+            </div>`;
+
+            fetch(url)
+                .then(async res => {
+                    if (!res.ok) {
+                        const text = await res.text().catch(() => '');
+                        if (res.status === 504 || text.includes('504 Gateway Time-out') || text.includes('Gateway Time-out')) {
+                            throw new Error('Server timed out (504). Processing exceeded 60s. Please choose a shorter range like Last 24 Hours or 7 Days.');
+                        } else if (res.status === 502) {
+                            throw new Error('502 Bad Gateway. Server is unavailable or restarting.');
+                        }
+                        throw new Error(`Server returned HTTP ${res.status}`);
+                    }
+                    const contentType = res.headers.get('content-type') || '';
+                    if (!contentType.includes('application/json')) {
+                        throw new Error('Server returned HTML/unexpected response instead of JSON.');
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     if (data.error) {
                         statsContainer.innerHTML = `<div class="no-data" style="color: var(--danger);">Error loading stats: ${esc(data.error)}</div>`;
@@ -3118,7 +3150,18 @@
                     }
                 })
                 .catch(err => {
-                    statsContainer.innerHTML = `<div class="no-data" style="color: var(--danger);">Failed to load stats: ${esc(err.message)}</div>`;
+                    statsContainer.innerHTML = `
+                        <div class="no-data" style="color: var(--danger); padding: 1.25rem 1rem;">
+                            <div style="margin-bottom: 0.5rem;">⚠️ Failed to load stats: ${esc(err.message)}</div>
+                            <button id="load-stats-btn" class="btn btn-secondary" style="font-size: 11px; padding: 0.25rem 0.6rem;">🔄 Retry</button>
+                        </div>
+                    `;
+                })
+                .finally(() => {
+                    if (refreshBtn) {
+                        refreshBtn.disabled = false;
+                        refreshBtn.textContent = '🔄 Refresh';
+                    }
                 });
         }
 
@@ -3126,7 +3169,8 @@
         const refreshStatsBtn = document.getElementById('refresh-stats-btn');
         if (refreshStatsBtn) {
             refreshStatsBtn.addEventListener('click', () => {
-                fetchAndRenderStats();
+                statsLoaded = true;
+                fetchAndRenderStats(true);
             });
         }
 
@@ -3134,12 +3178,19 @@
         const statsTimeRange = document.getElementById('stats-time-range');
         if (statsTimeRange) {
             statsTimeRange.addEventListener('change', () => {
-                fetchAndRenderStats();
+                if (statsLoaded) {
+                    fetchAndRenderStats();
+                }
             });
         }
 
-        // Initial stats load
-        fetchAndRenderStats();
+        // Hook up click on on-demand Load Stats button
+        document.addEventListener('click', (e) => {
+            if (e.target && (e.target.id === 'load-stats-btn' || e.target.closest('#load-stats-btn'))) {
+                statsLoaded = true;
+                fetchAndRenderStats(true);
+            }
+        });
     </script>
 </body>
 

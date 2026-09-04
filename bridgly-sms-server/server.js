@@ -20,10 +20,18 @@ async function connectMongo() {
         console.log(`Connected to MongoDB: ${MONGO_DB}`);
 
         // Create indexes
-        await db.collection('message_history').createIndex({ createdAt: -1 });
-        await db.collection('message_history').createIndex({ status: 1 });
-        await db.collection('bulk_queue').createIndex({ senderKey: 1 });
-        await db.collection('bulk_queue').createIndex({ createdAt: 1 });
+        try {
+            await db.collection('message_history').createIndex({ createdAt: -1 });
+            await db.collection('message_history').createIndex({ status: 1 });
+            await db.collection('message_history').createIndex({ createdAt: -1, status: 1 });
+            await db.collection('message_history').createIndex({ status: 1, createdAt: -1 });
+            await db.collection('message_history').createIndex({ deviceModel: 1, createdAt: -1 });
+            await db.collection('message_history').createIndex({ sender: 1, createdAt: -1 });
+            await db.collection('bulk_queue').createIndex({ senderKey: 1 });
+            await db.collection('bulk_queue').createIndex({ createdAt: 1 });
+        } catch (idxErr) {
+            console.warn('Note: Non-critical index creation warning:', idxErr.message);
+        }
     } catch (e) {
         console.error('Failed to connect to MongoDB:', e.message);
         process.exit(1);
@@ -736,13 +744,27 @@ app.get('/download-apk', (req, res) => {
 });
 
 
+// In-memory cache for message statistics (60-second TTL)
+const statsCache = new Map();
+const STATS_CACHE_TTL_MS = 60 * 1000;
+
 // Get Message Statistics
 app.get('/api/message-stats', async (req, res) => {
     if (!db) {
         return res.status(503).json({ error: 'Database not connected' });
     }
     try {
-        const { range } = req.query;
+        const VALID_RANGES = ['1h', '24h', '7d', '30d', 'all'];
+        const rawRange = (req.query.range || '24h').toString().toLowerCase();
+        const range = VALID_RANGES.includes(rawRange) ? rawRange : '24h';
+        const isForceRefresh = req.query.refresh === '1' || req.query.force === 'true';
+
+        // Check in-memory cache first
+        const cached = statsCache.get(range);
+        if (!isForceRefresh && cached && (Date.now() - cached.timestamp < STATS_CACHE_TTL_MS)) {
+            return res.json(cached.data);
+        }
+
         const filterQuery = {};
         if (range && range !== 'all') {
             const now = Date.now();
@@ -762,90 +784,99 @@ app.get('/api/message-stats', async (req, res) => {
         }
 
         const col = db.collection('message_history');
-        const total = await col.countDocuments(filterQuery);
 
-        const statusStats = await col.aggregate([
-            { $match: filterQuery },
-            { $group: { _id: "$status", count: { $sum: 1 } } }
-        ]).toArray();
+        // Run independent queries and aggregations concurrently via Promise.all
+        const [
+            total,
+            statusStats,
+            failureStats,
+            deviceStats,
+            simStats,
+            dailyStats,
+            senderStats,
+            uniqueRecipientsResult,
+            newestPendingDoc
+        ] = await Promise.all([
+            col.countDocuments(filterQuery),
+            col.aggregate([
+                { $match: filterQuery },
+                { $group: { _id: "$status", count: { $sum: 1 } } }
+            ]).toArray(),
+            col.aggregate([
+                { $match: { ...filterQuery, status: "failed" } },
+                { $group: { _id: "$error", count: { $sum: 1 } } },
+                { $sort: { count: -1 } }
+            ]).toArray(),
+            col.aggregate([
+                { $match: filterQuery },
+                {
+                    $group: {
+                        _id: "$deviceModel",
+                        total: { $sum: 1 },
+                        delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
+                        sent: { $sum: { $cond: [{ $eq: ["$status", "sent"] }, 1, 0] } },
+                        failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
+                        pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } }
+                    }
+                },
+                { $sort: { total: -1 } }
+            ]).toArray(),
+            col.aggregate([
+                { $match: filterQuery },
+                {
+                    $group: {
+                        _id: "$sim",
+                        total: { $sum: 1 },
+                        delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
+                        failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]).toArray(),
+            col.aggregate([
+                { $match: filterQuery },
+                {
+                    $group: {
+                        _id: { $substr: ["$createdAt", 0, 10] },
+                        total: { $sum: 1 },
+                        delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
+                        sent: { $sum: { $cond: [{ $eq: ["$status", "sent"] }, 1, 0] } },
+                        failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
+                        pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]).toArray(),
+            col.aggregate([
+                { $match: { ...filterQuery, sender: { $ne: null } } },
+                {
+                    $group: {
+                        _id: "$sender",
+                        total: { $sum: 1 },
+                        delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
+                        sent: { $sum: { $cond: [{ $eq: ["$status", "sent"] }, 1, 0] } },
+                        failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
+                        pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } }
+                    }
+                },
+                { $sort: { total: -1 } }
+            ]).toArray(),
+            col.aggregate([
+                { $match: { ...filterQuery, to: { $ne: null } } },
+                { $group: { _id: "$to" } },
+                { $count: "count" }
+            ]).toArray(),
+            col.find({ ...filterQuery, status: 'pending' }).sort({ createdAt: -1 }).limit(1).toArray()
+        ]);
 
-        const failureStats = await col.aggregate([
-            { $match: { ...filterQuery, status: "failed" } },
-            { $group: { _id: "$error", count: { $sum: 1 } } },
-            { $sort: { count: -1 } }
-        ]).toArray();
-
-        const deviceStats = await col.aggregate([
-            { $match: filterQuery },
-            {
-                $group: {
-                    _id: "$deviceModel",
-                    total: { $sum: 1 },
-                    delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
-                    sent: { $sum: { $cond: [{ $eq: ["$status", "sent"] }, 1, 0] } },
-                    failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
-                    pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } }
-                }
-            },
-            { $sort: { total: -1 } }
-        ]).toArray();
-
-        const simStats = await col.aggregate([
-            { $match: filterQuery },
-            {
-                $group: {
-                    _id: "$sim",
-                    total: { $sum: 1 },
-                    delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
-                    failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } }
-                }
-            },
-            { $sort: { _id: 1 } }
-        ]).toArray();
-
-        const dailyStats = await col.aggregate([
-            { $match: filterQuery },
-            {
-                $group: {
-                    _id: { $substr: ["$createdAt", 0, 10] },
-                    total: { $sum: 1 },
-                    delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
-                    sent: { $sum: { $cond: [{ $eq: ["$status", "sent"] }, 1, 0] } },
-                    failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
-                    pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } }
-                }
-            },
-            { $sort: { _id: 1 } }
-        ]).toArray();
-
-        // Per-sender (SIM number) success rate
-        const senderStats = await col.aggregate([
-            { $match: { ...filterQuery, sender: { $ne: null } } },
-            {
-                $group: {
-                    _id: "$sender",
-                    total: { $sum: 1 },
-                    delivered: { $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] } },
-                    sent: { $sum: { $cond: [{ $eq: ["$status", "sent"] }, 1, 0] } },
-                    failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
-                    pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } }
-                }
-            },
-            { $sort: { total: -1 } }
-        ]).toArray();
-
-        // Unique recipients count
-        const uniqueRecipientsResult = await col.aggregate([
-            { $match: { ...filterQuery, to: { $ne: null } } },
-            { $group: { _id: "$to" } },
-            { $count: "count" }
-        ]).toArray();
         const uniqueRecipients = uniqueRecipientsResult.length > 0 ? uniqueRecipientsResult[0].count : 0;
+        const newestPending = newestPendingDoc.length > 0 ? newestPendingDoc[0].createdAt : null;
 
         // Hourly throughput for the most recent active day
         let hourlyStats = [];
-        if (dailyStats.length > 0) {
-            const latestDay = dailyStats[dailyStats.length - 1]._id; // e.g. "2026-06-22"
+        const validDaily = dailyStats.filter(d => d && d._id && typeof d._id === 'string' && d._id.length >= 10);
+        if (validDaily.length > 0) {
+            const latestDay = validDaily[validDaily.length - 1]._id; // e.g. "2026-06-22"
             const hourlyMatch = filterQuery.createdAt
                     ? { $and: [{ createdAt: filterQuery.createdAt }, { createdAt: { $regex: `^${latestDay}` } }] }
                     : { createdAt: { $regex: `^${latestDay}` } };
@@ -863,14 +894,7 @@ app.get('/api/message-stats', async (req, res) => {
             ]).toArray();
         }
 
-        // Most recent pending message
-        let newestPending = null;
-        const newestPendingDoc = await col.find({ ...filterQuery, status: 'pending' }).sort({ createdAt: -1 }).limit(1).toArray();
-        if (newestPendingDoc.length > 0) {
-            newestPending = newestPendingDoc[0].createdAt;
-        }
-
-        res.json({
+        const responseData = {
             total,
             statusStats,
             failureStats,
@@ -881,7 +905,10 @@ app.get('/api/message-stats', async (req, res) => {
             uniqueRecipients,
             hourlyStats,
             newestPending
-        });
+        };
+
+        statsCache.set(range, { timestamp: Date.now(), data: responseData });
+        res.json(responseData);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -941,6 +968,7 @@ app.post('/api/telegram/discover', async (req, res) => {
 app.post('/api/clear-messages', async (req, res) => {
     try {
         messageHistory.length = 0;
+        statsCache.clear();
         if (db) {
             await db.collection('message_history').deleteMany({});
         }
