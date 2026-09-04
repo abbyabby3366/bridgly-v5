@@ -1093,34 +1093,34 @@ app.post('/api/clear-queue', async (req, res) => {
             deviceQueues.delete(matchedKey);
         }
 
-        if (db) {
-            try {
-                const query = { $or: [{ senderKey: targetKey }] };
-                if (matchedKey) query.$or.push({ senderKey: matchedKey });
-                if (sender) query.$or.push({ sender: sender });
-                await db.collection('bulk_queue').deleteMany(query);
-            } catch (e) {
-                console.error('Error clearing bulk queue for device from MongoDB:', e.message);
-            }
-        }
-
+        // Broadcast and respond immediately so clients update with zero delay
         addLog(`Bulk SMS Queue cleared for device (${sender || targetKey}). ${removedCount} messages removed.`);
         broadcastQueueStatus();
+
+        // Asynchronous background deletion from MongoDB to avoid blocking client response
+        if (db) {
+            const query = { $or: [{ senderKey: targetKey }] };
+            if (matchedKey) query.$or.push({ senderKey: matchedKey });
+            if (sender) query.$or.push({ sender: sender });
+            db.collection('bulk_queue').deleteMany(query).catch(e => {
+                console.error('Error clearing bulk queue for device from MongoDB:', e.message);
+            });
+        }
+
         return res.json({ success: true, count: removedCount, sender: sender || targetKey });
     }
 
     const originalCount = getQueueLength();
     deviceQueues.clear();
-    // Clear from MongoDB
-    if (db) {
-        try {
-            await db.collection('bulk_queue').deleteMany({});
-        } catch (e) {
-            console.error('Error clearing bulk queue from MongoDB:', e.message);
-        }
-    }
     addLog(`Bulk SMS Queue cleared (all devices). ${originalCount} messages removed.`);
     broadcastQueueStatus();
+
+    // Clear from MongoDB in background
+    if (db) {
+        db.collection('bulk_queue').deleteMany({}).catch(e => {
+            console.error('Error clearing bulk queue from MongoDB:', e.message);
+        });
+    }
     res.json({ success: true, count: originalCount });
 });
 

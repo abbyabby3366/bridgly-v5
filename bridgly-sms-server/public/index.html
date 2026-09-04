@@ -1100,6 +1100,46 @@
                 gap: 0.4rem !important;
             }
         }
+
+        /* Floating Toast Notifications */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast-msg {
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+            background: rgba(26, 32, 44, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+            pointer-events: auto;
+            animation: toastSlideIn 0.25s ease-out;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast-msg.toast-error {
+            background: rgba(185, 28, 28, 0.95);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+        .toast-msg.toast-success {
+            background: rgba(16, 115, 68, 0.95);
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+        @keyframes toastSlideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 
@@ -1108,7 +1148,7 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <h1>Bridgly SMS Gateway v5.4</h1>
+                <h1>Bridgly SMS Gateway v5.4.3</h1>
             </div>
             <div class="header-controls">
                 <div class="status-badge">
@@ -1378,11 +1418,15 @@
                         </button>
                     </div>
                     <div id="stats-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <div style="text-align: center; padding: 1.5rem 1rem; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.12); border-radius: 6px;">
+                        <div
+                            style="text-align: center; padding: 1.5rem 1rem; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.12); border-radius: 6px;">
                             <div style="font-size: 1.3rem; margin-bottom: 0.4rem;">📊</div>
-                            <div style="font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 0.25rem;">Statistics on Demand</div>
-                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 0.8rem;">Click below to load transmission statistics for the selected time range.</div>
-                            <button id="load-stats-btn" class="btn btn-primary" style="padding: 0.35rem 0.9rem; font-size: 11px; font-weight: 600;">
+                            <div style="font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 0.25rem;">
+                                Statistics on Demand</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 0.8rem;">Click below
+                                to load transmission statistics for the selected time range.</div>
+                            <button id="load-stats-btn" class="btn btn-primary"
+                                style="padding: 0.35rem 0.9rem; font-size: 11px; font-weight: 600;">
                                 📊 Load Statistics
                             </button>
                         </div>
@@ -1564,6 +1608,25 @@
             const div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
+        }
+
+        // Floating toast feedback
+        function showToast(text, isError = false) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.className = `toast-msg ${isError ? 'toast-error' : 'toast-success'}`;
+            toast.innerHTML = `<span>${isError ? '⚠️' : '✅'}</span> <span>${esc(text)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
         }
 
         // Parse CSV text supporting quoted values and commas
@@ -2134,8 +2197,17 @@
         });
 
         clearQueueBtn.addEventListener('click', () => {
-            if (!confirm('Are you sure you want to cancel all bulk message queues across all devices?')) return;
+            if (!confirm('STOP all bulk message queues across all devices?\n\n• Click OK to STOP all sending immediately.\n• Click Cancel to keep sending.')) return;
             clearQueueBtn.disabled = true;
+            clearQueueBtn.innerText = 'Stopping...';
+
+            // Optimistic UI update
+            const previousBreakdown = [...queueBreakdown];
+            const previousQueueLength = currentQueueLength;
+            queueBreakdown = [];
+            activeDeviceQueues = 0;
+            updateQueueUI(0);
+
             fetch('/api/clear-queue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2145,16 +2217,54 @@
                 .then(data => {
                     if (data.success) {
                         appendLog(`All bulk sending queues cleared successfully.`);
+                        showToast(`All bulk sending queues stopped (${data.count} messages removed)`);
+                    } else {
+                        showToast(`Failed to stop queues: ${data.error || 'Server error'}`, true);
                     }
                 })
-                .catch(err => appendLog(`Network error clearing queue: ${err.message}`, true))
+                .catch(err => {
+                    appendLog(`Network error clearing queue: ${err.message}`, true);
+                    showToast(`Network error stopping queues: ${err.message}`, true);
+                    // Revert optimistic update on network failure
+                    queueBreakdown = previousBreakdown;
+                    activeDeviceQueues = queueBreakdown.length;
+                    updateQueueUI(previousQueueLength);
+                })
                 .finally(() => {
                     clearQueueBtn.disabled = false;
+                    clearQueueBtn.innerText = 'Cancel All';
                 });
         });
 
-        window.cancelDeviceQueue = function (senderKey, senderDisplay) {
-            if (!confirm(`Are you sure you want to cancel the pending queue for device ${senderDisplay || senderKey}?`)) return;
+        window.cancelDeviceQueue = function (senderKey, senderDisplay, btnElement) {
+            const displayName = senderDisplay || senderKey;
+            const confirmMsg = `STOP sending queue for device ${displayName}?\n\n• Click OK to STOP sending immediately.\n• Click Cancel to keep sending.`;
+            if (!confirm(confirmMsg)) return;
+
+            if (btnElement) {
+                btnElement.disabled = true;
+                btnElement.innerText = 'Stopping...';
+            }
+
+            // Save snapshot for rollback if network fails
+            const previousBreakdown = [...queueBreakdown];
+            const previousQueueLength = currentQueueLength;
+
+            // Optimistic UI update: immediately remove from local state so UI updates instantly
+            const devIndex = queueBreakdown.findIndex(q => 
+                (q.senderKey && q.senderKey === senderKey) || 
+                (q.sender && q.sender === senderDisplay) ||
+                (q.sender && normalizeSender(q.sender) === normalizeSender(displayName))
+            );
+            let removedCount = 0;
+            if (devIndex !== -1) {
+                removedCount = queueBreakdown[devIndex].remaining;
+                queueBreakdown.splice(devIndex, 1);
+            }
+            activeDeviceQueues = queueBreakdown.length;
+            currentQueueLength = Math.max(0, currentQueueLength - removedCount);
+            updateQueueUI(currentQueueLength);
+
             fetch('/api/clear-queue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2163,10 +2273,20 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        appendLog(`Cleared ${data.count} queued message(s) for device ${senderDisplay || senderKey}.`);
+                        appendLog(`Cleared ${data.count || removedCount} queued message(s) for device ${displayName}.`);
+                        showToast(`Stopped queue for ${displayName} (${data.count || removedCount} messages removed)`);
+                    } else {
+                        showToast(`Failed to stop queue for ${displayName}: ${data.error || 'Server error'}`, true);
                     }
                 })
-                .catch(err => appendLog(`Network error clearing queue for device ${senderDisplay || senderKey}: ${err.message}`, true));
+                .catch(err => {
+                    appendLog(`Network error clearing queue for device ${displayName}: ${err.message}`, true);
+                    showToast(`Network error stopping queue: ${err.message}`, true);
+                    // Revert optimistic update
+                    queueBreakdown = previousBreakdown;
+                    activeDeviceQueues = queueBreakdown.length;
+                    updateQueueUI(previousQueueLength);
+                });
         };
 
         function updateQueueUI(length) {
@@ -2256,7 +2376,7 @@
                             <div style="display: flex; align-items: center; gap: 0.6rem; font-size: 10px;">
                                 <span style="color: var(--warning);">${q.remaining} msg left</span>
                                 <span style="color: var(--text-muted);">~${qDuration}</span>
-                                <button class="btn btn-danger" onclick="cancelDeviceQueue('${esc(q.senderKey || q.sender)}', '${esc(q.sender)}')" style="padding: 0.15rem 0.4rem; font-size: 10px; line-height: 1; border-radius: 3px; cursor: pointer;" title="Cancel queue for this device">Cancel</button>
+                                <button class="btn btn-danger" onclick="cancelDeviceQueue('${esc(q.senderKey || q.sender)}', '${esc(q.sender)}', this)" style="padding: 0.15rem 0.4rem; font-size: 10px; line-height: 1; border-radius: 3px; cursor: pointer;" title="Stop queue for this device">Cancel</button>
                             </div>
                         </div>`;
                     }).join('');
